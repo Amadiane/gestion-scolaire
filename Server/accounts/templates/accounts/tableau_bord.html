@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><title>Tableau de bord</title></head>
+<body>
+    <h1>Bienvenue, {{ user.get_full_name|default:user.username }}</h1>
+    <p>Rôle : {{ user.get_role_display }}</p>
+    <p>École : {{ user.ecole }}</p>
+</body>
+</html>
