@@ -2,33 +2,80 @@
 const BASE_URL =
   window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://127.0.0.1:8000"
-    : "https://santastyle.onrender.com"; // ton URL backend Render
+    : "https://gestionscolaire.onrender.com"; // à remplacer par la vraie URL une fois déployé sur Render
 
 const CONFIG = {
   BASE_URL,
-  API_LOGIN: `${BASE_URL}/api/login/`,
-  API_REGISTER: `${BASE_URL}/api/users/`,
-  API_CATEGORIE :  `${BASE_URL}/api/categories/`,
-  API_PRODUIT: `${BASE_URL}/api/produits/`,
-  API_STOCK: `${BASE_URL}/api/stocks/`,
-  API_VENTE: `${BASE_URL}/api/ventes/`,
-  API_ACTIVITY: `${BASE_URL}/api/activity/`,
-  API_TRACK: `${BASE_URL}/api/track/`,
-  API_TRACK_STATS: `${BASE_URL}/api/track/stats/`,
 
+  // --- Authentification ---
+  API_LOGIN: `${BASE_URL}/api/token/`,
+  API_REFRESH_TOKEN: `${BASE_URL}/api/token/refresh/`,
+  API_UTILISATEUR_MOI: `${BASE_URL}/api/utilisateur/moi/`,
 
+  // --- Académique ---
+  API_ANNEES_SCOLAIRES: `${BASE_URL}/api/annees-scolaires/`,
+  API_NIVEAUX: `${BASE_URL}/api/niveaux/`,
+  API_MATIERES: `${BASE_URL}/api/matieres/`,
+  API_CLASSES: `${BASE_URL}/api/classes/`,
+  API_NOTES: `${BASE_URL}/api/notes/`,
+  API_BULLETINS: `${BASE_URL}/api/bulletins/`,
+  API_BULLETIN_VALIDER: (id) => `${BASE_URL}/api/bulletins/${id}/valider/`,
+  API_BULLETIN_GENERER_PDF: (id) => `${BASE_URL}/api/bulletins/${id}/generer_pdf/`,
+  API_BULLETIN_RECHERCHER: (terme) =>
+    `${BASE_URL}/api/bulletins/rechercher/?q=${encodeURIComponent(terme)}`,
 
+  // --- Élèves ---
+  API_ELEVES: `${BASE_URL}/api/eleves/`,
+  API_ELEVE_DETAIL: (id) => `${BASE_URL}/api/eleves/${id}/`,
+  API_PARENTS: `${BASE_URL}/api/parents/`,
+  API_INSCRIPTIONS: `${BASE_URL}/api/inscriptions/`,
 
-// 📸 Dossier media (pour les images directes)
-MEDIA_URL: `${BASE_URL}/media/`,
-
-CLOUDINARY_NAME: "ddsckcv3w",
-CLOUDINARY_UPLOAD_PRESET: "default", // 👈 le nom exact de ton preset UNSIGNED
-  
-
+  // --- Cloudinary (uniquement pour affichage direct d'une image existante,
+  // pas pour l'upload — l'upload passe par Django, voir API_ELEVES en POST)
+  CLOUDINARY_NAME: "kdcjs7fx",
 };
 
 export default CONFIG;
+
+
+
+
+
+// // ✅ Détection automatique selon le domaine
+// const BASE_URL =
+//   window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+//     ? "http://127.0.0.1:8000"
+//     : "https://gestionscolaire.onrender.com"; // ton URL backend Render
+
+// const CONFIG = {
+//   BASE_URL,
+
+
+
+  
+//   // API_LOGIN: `${BASE_URL}/api/login/`,
+//   // API_REGISTER: `${BASE_URL}/api/users/`,
+//   // API_CATEGORIE :  `${BASE_URL}/api/categories/`,
+//   // API_PRODUIT: `${BASE_URL}/api/produits/`,
+//   // API_STOCK: `${BASE_URL}/api/stocks/`,
+//   // API_VENTE: `${BASE_URL}/api/ventes/`,
+//   // API_ACTIVITY: `${BASE_URL}/api/activity/`,
+//   // API_TRACK: `${BASE_URL}/api/track/`,
+//   // API_TRACK_STATS: `${BASE_URL}/api/track/stats/`,
+
+
+
+
+// // 📸 Dossier media (pour les images directes)
+// MEDIA_URL: `${BASE_URL}/media/`,
+
+// CLOUDINARY_NAME: "kdcjs7fx",
+// CLOUDINARY_UPLOAD_PRESET: "default", // 👈 le nom exact de ton preset UNSIGNED
+  
+
+// };
+
+// export default CONFIG;
 
 
 
