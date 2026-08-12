@@ -1,0 +1,17 @@
+:root {
+  --color-primary: #1E3A5F;
+  --color-primary-dark: #122842;
+  --color-accent: #2F8F5B;
+  --color-bg: #F7F8FA;
+  --color-surface: #FFFFFF;
+  --color-card: #F0F2F5;
+  --color-border: #DCE1E8;
+  --color-text: #1A2333;
+  --color-text-muted: #5B6472;
+  --color-text-dim: #96A0AC;
+  --color-danger: #A32020;
+  --color-danger-bg: #FDEAEA;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', system-ui, sans-serif; color: var(--color-text); }

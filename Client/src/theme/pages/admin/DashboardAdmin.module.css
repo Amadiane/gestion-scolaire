@@ -1,0 +1,19 @@
+.wrapper {
+  padding: 32px 36px;
+}
+
+.title {
+  font-size: 24px;
+  color: var(--color-primary);
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 480px) {
+  .wrapper { padding: 20px 16px; }
+  .title { font-size: 20px; }
+}
