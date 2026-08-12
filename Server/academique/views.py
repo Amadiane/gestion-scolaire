@@ -15,15 +15,39 @@ from .pdf import generer_pdf_bulletin
 
 
 
+from rest_framework.exceptions import ValidationError
+
+from .serializers import AnneeScolaireDetailSerializer
+
 class AnneeScolaireViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
     queryset = AnneeScolaire.objects.all()
     serializer_class = AnneeScolaireSerializer
 
     def perform_create(self, serializer):
-        # Fixe l'école automatiquement depuis l'utilisateur connecté —
-        # cohérent avec `ecole` en read_only dans le serializer ci-dessus.
-        serializer.save(ecole=self.request.user.ecole)
+        ecole = self.request.user.ecole
+        if ecole is None:
+            raise ValidationError(
+                "Impossible de créer une année scolaire : aucune école n'est associée à ce compte."
+            )
+        serializer.save(ecole=ecole)
 
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = AnneeScolaireDetailSerializer(instance)
+        return Response(serializer.data)
+
+    def perform_destroy(self, instance):
+        if instance.est_active:
+            raise ValidationError(
+                "Impossible de supprimer l'année scolaire active. "
+                "Activez d'abord une autre année avant de supprimer celle-ci."
+            )
+        if instance.classes.exists():
+            raise ValidationError(
+                "Impossible de supprimer cette année : des classes lui sont "
+                "déjà rattachées."
+            )
+        instance.delete()
 
 from .models import Niveau, Matiere, Classe
 from .serializers import NiveauSerializer, MatiereSerializer, ClasseSerializer

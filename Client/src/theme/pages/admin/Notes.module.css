@@ -105,3 +105,25 @@
   .select { width: 100%; }
   .saveButton { width: 100%; justify-content: center; }
 }
+
+.historiqueSection {
+  margin-top: 36px;
+  padding-top: 24px;
+  border-top: 1px solid var(--color-border);
+}
+
+.historiqueTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  color: var(--color-primary);
+  margin-bottom: 16px;
+}
+
+.limitMsg {
+  padding: 10px 18px;
+  font-size: 12px;
+  color: var(--color-text-dim);
+  background: var(--color-card);
+}

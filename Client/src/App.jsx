@@ -10,6 +10,8 @@ import Parents from './pages/admin/Parents.jsx';
 import Notes from './pages/admin/Notes.jsx';
 import Bulletins from './pages/admin/Bulletins.jsx';
 import FicheParent from './pages/admin/FicheParent.jsx';
+import AnneesScolaires from './pages/admin/AnneesScolaires.jsx';
+import FicheAnneeScolaire from './pages/admin/FicheAnneeScolaire.jsx';
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('access');
@@ -39,6 +41,8 @@ function App() {
         <Route path="notes" element={<Notes />} />
         <Route path="bulletins" element={<Bulletins />} />
         <Route path="parents/:id" element={<FicheParent />} />
+        <Route path="annees-scolaires" element={<AnneesScolaires />} />
+        <Route path="annees-scolaires/:id" element={<FicheAnneeScolaire />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/login" replace />} />

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save } from 'lucide-react';
+import { Save, History } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
 import styles from '../../theme/pages/admin/Notes.module.css';
@@ -9,6 +9,8 @@ const TRIMESTRES = [
   { value: 't2', label: '2ème trimestre' },
   { value: 't3', label: '3ème trimestre' },
 ];
+
+const TRIMESTRE_LABEL = { t1: '1er trimestre', t2: '2ème trimestre', t3: '3ème trimestre' };
 
 const Notes = () => {
   const [classes, setClasses] = useState([]);
@@ -28,6 +30,29 @@ const Notes = () => {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
 
+  // Historique complet — visible dès l'arrivée sur la page, indépendant
+  // des filtres de saisie ci-dessus.
+  const [toutesLesNotes, setToutesLesNotes] = useState([]);
+  const [loadingHistorique, setLoadingHistorique] = useState(true);
+
+  const chargerHistorique = async () => {
+    setLoadingHistorique(true);
+    try {
+      const res = await api.get(CONFIG.API_NOTES);
+      // Tri du plus récent au plus ancien pour voir en premier ce qui
+      // vient d'être saisi.
+      const trie = [...res.data].sort(
+        (a, b) => new Date(b.date_saisie) - new Date(a.date_saisie)
+      );
+      setToutesLesNotes(trie);
+    } catch {
+      // silencieux — l'historique n'est pas critique si ça échoue,
+      // la saisie reste utilisable
+    } finally {
+      setLoadingHistorique(false);
+    }
+  };
+
   useEffect(() => {
     const chargerBase = async () => {
       const [resClasses, resMatieres, resAnnees] = await Promise.all([
@@ -40,6 +65,7 @@ const Notes = () => {
       setAnneeActive(resAnnees.data.find((a) => a.est_active) || null);
     };
     chargerBase();
+    chargerHistorique();
   }, []);
 
   useEffect(() => {
@@ -105,6 +131,7 @@ const Notes = () => {
         });
       await Promise.all(appels);
       setMessage('Notes enregistrées avec succès.');
+      chargerHistorique(); // rafraîchit la liste en bas immédiatement
     } catch {
       setMessage("Erreur lors de l'enregistrement d'une ou plusieurs notes.");
     } finally {
@@ -114,8 +141,8 @@ const Notes = () => {
 
   return (
     <div className={styles.wrapper}>
-      <h1 className={styles.title}>Saisie des notes</h1>
-      <p className={styles.subtitle}>Sélectionnez une classe, une matière et un trimestre</p>
+      <h1 className={styles.title}>Notes</h1>
+      <p className={styles.subtitle}>Saisissez les notes ou consultez l'historique ci-dessous</p>
 
       <div className={styles.filters}>
         <select value={classeId} onChange={(e) => setClasseId(e.target.value)} className={styles.select}>
@@ -183,6 +210,49 @@ const Notes = () => {
           </button>
         </>
       )}
+
+      {/* --- Historique, toujours visible --- */}
+      <div className={styles.historiqueSection}>
+        <h2 className={styles.historiqueTitle}>
+          <History size={16} /> Historique des notes ({toutesLesNotes.length})
+        </h2>
+
+        {loadingHistorique && <p className={styles.stateMsg}>Chargement de l'historique...</p>}
+
+        {!loadingHistorique && toutesLesNotes.length === 0 && (
+          <p className={styles.stateMsg}>Aucune note enregistrée pour le moment.</p>
+        )}
+
+        {!loadingHistorique && toutesLesNotes.length > 0 && (
+          <div className={styles.tableWrapper}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Élève</th>
+                  <th>Matière</th>
+                  <th>Période</th>
+                  <th>Note</th>
+                  <th>Saisie le</th>
+                </tr>
+              </thead>
+              <tbody>
+                {toutesLesNotes.slice(0, 50).map((note) => (
+                  <tr key={note.id}>
+                    <td>{note.eleve_nom || `Élève #${note.eleve}`}</td>
+                    <td>{note.matiere_nom || `Matière #${note.matiere}`}</td>
+                    <td>{TRIMESTRE_LABEL[note.trimestre]}</td>
+                    <td>{note.valeur}/{note.valeur_max}</td>
+                    <td>{note.date_saisie ? new Date(note.date_saisie).toLocaleDateString('fr-FR') : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {toutesLesNotes.length > 50 && (
+              <p className={styles.limitMsg}>Affichage limité aux 50 notes les plus récentes.</p>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

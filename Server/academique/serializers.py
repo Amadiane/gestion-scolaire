@@ -40,16 +40,20 @@ from .models import Note, Bulletin
 
 class NoteSerializer(serializers.ModelSerializer):
     moyenne_ponderee = serializers.ReadOnlyField()
+    eleve_nom = serializers.SerializerMethodField()
+    matiere_nom = serializers.CharField(source='matiere.nom', read_only=True)
 
     class Meta:
         model = Note
         fields = [
-            "id", "ecole", "eleve", "matiere", "classe", "annee_scolaire",
-            "trimestre", "valeur", "valeur_max", "date_saisie", "saisi_par",
-            "moyenne_ponderee",
+            "id", "ecole", "eleve", "eleve_nom", "matiere", "matiere_nom",
+            "classe", "annee_scolaire", "trimestre", "valeur", "valeur_max",
+            "date_saisie", "saisi_par", "moyenne_ponderee",
         ]
-        read_only_fields = ["ecole", "date_saisie", "saisi_par"]
+        read_only_fields = ["ecole", "valeur_max", "date_saisie", "saisi_par"]
 
+    def get_eleve_nom(self, obj):
+        return f"{obj.eleve.prenom} {obj.eleve.nom}"
 
 class BulletinSerializer(serializers.ModelSerializer):
     class Meta:
@@ -88,3 +92,37 @@ class BulletinSerializer(serializers.ModelSerializer):
 
     def get_eleve_nom(self, obj):
         return f"{obj.eleve.prenom} {obj.eleve.nom}"
+
+
+class AnneeScolaireDetailSerializer(serializers.ModelSerializer):
+    classes = serializers.SerializerMethodField()
+    nb_eleves_total = serializers.SerializerMethodField()
+    nb_notes = serializers.SerializerMethodField()
+    nb_bulletins = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AnneeScolaire
+        fields = [
+            "id", "ecole", "nom", "date_debut", "date_fin", "est_active",
+            "classes", "nb_eleves_total", "nb_notes", "nb_bulletins",
+        ]
+
+    def get_classes(self, obj):
+        return [
+            {
+                "id": c.id,
+                "nom": c.nom,
+                "niveau_nom": c.niveau.nom,
+                "effectif": c.inscriptions.filter(annee_scolaire=obj).count(),
+            }
+            for c in obj.classes.all()
+        ]
+
+    def get_nb_eleves_total(self, obj):
+        return obj.inscriptions.count()
+
+    def get_nb_notes(self, obj):
+        return obj.notes.count()
+
+    def get_nb_bulletins(self, obj):
+        return obj.bulletins.count()

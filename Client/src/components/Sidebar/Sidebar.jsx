@@ -3,6 +3,7 @@ import {
   LayoutDashboard, Users, School, BookOpen, FileText, UserCog, LogOut, X,
 } from 'lucide-react';
 import styles from '../../theme/components/Sidebar.module.css';
+import { Calendar } from 'lucide-react';
 
 const NAV_ITEMS = [
   { to: '/dashboardAdmin', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
@@ -11,6 +12,7 @@ const NAV_ITEMS = [
   { to: '/dashboardAdmin/classes', label: 'Classes', icon: School },
   { to: '/dashboardAdmin/notes', label: 'Notes', icon: BookOpen },
   { to: '/dashboardAdmin/bulletins', label: 'Bulletins', icon: FileText },
+  { to: '/dashboardAdmin/annees-scolaires', label: 'Années scolaires', icon: Calendar }, // nouveau
 ];
 
 const Sidebar = ({ isOpen, onClose }) => {

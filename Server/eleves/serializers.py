@@ -47,10 +47,11 @@ class ParentChoixSerializer(serializers.ModelSerializer):
         fields = ["id", "nom", "prenom", "telephone"]
 
 class EleveResumeSerializer(serializers.ModelSerializer):
+    photo = serializers.FileField(required=False, allow_null=True)
+
     class Meta:
         model = Eleve
         fields = ["id", "nom", "prenom", "matricule", "photo"]
-
 
 class ParentDetailSerializer(serializers.ModelSerializer):
     enfants = serializers.SerializerMethodField()
