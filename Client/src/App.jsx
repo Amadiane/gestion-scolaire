@@ -2,6 +2,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/auth/Login.jsx';
 import AdminLayout from './layouts/AdminLayout.jsx';
 import DashboardAdmin from './pages/admin/DashboardAdmin.jsx';
+import Eleves from './pages/admin/Eleves.jsx';
+import FicheEleve from './pages/admin/FicheEleve.jsx';
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('access');
@@ -22,7 +24,9 @@ function App() {
         }
       >
         <Route index element={<DashboardAdmin />} />
-        {/* Les futures pages (Eleves, Classes, Notes, Bulletins) viendront ici */}
+        <Route path="eleves" element={<Eleves />} />
+        <Route path="eleves" element={<Eleves />} />
+        <Route path="eleves/:id" element={<FicheEleve />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/login" replace />} />

@@ -55,9 +55,14 @@ def generer_pdf_bulletin(bulletin):
     resultat = cloudinary.uploader.upload(
         buffer,
         resource_type="raw",
-        folder="bulletins",
-        public_id=f"bulletin_{bulletin.eleve.matricule}_{bulletin.annee_scolaire.nom}_{bulletin.trimestre}",
-        format="pdf",
+        type="authenticated",
+        public_id=f"bulletins/bulletin_{bulletin.eleve.matricule}_{bulletin.annee_scolaire.nom}_{bulletin.trimestre}.pdf",
         overwrite=True,
     )
-    return resultat["secure_url"]
+    # On a besoin des deux : le public_id ET la version exacte,
+    # indispensable pour signer correctement l'URL de téléchargement.
+    return resultat["public_id"], resultat["version"]
+
+    # On stocke le public_id, pas l'URL directe — l'URL signée sera
+    # régénérée à chaque téléchargement, avec une expiration courte.
+  

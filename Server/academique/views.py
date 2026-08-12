@@ -1,10 +1,18 @@
 from django.shortcuts import render
 
-# Create your views here.
+import time
+import cloudinary.utils
 from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from tenants.mixins import TenantScopedQuerysetMixin
-from .models import AnneeScolaire
-from .serializers import AnneeScolaireSerializer
+from .models import AnneeScolaire, Niveau, Matiere, Classe, Note, Bulletin
+from .serializers import (
+    AnneeScolaireSerializer, NiveauSerializer, MatiereSerializer,
+    ClasseSerializer, NoteSerializer, BulletinSerializer,
+)
+from .pdf import generer_pdf_bulletin
+
 
 
 class AnneeScolaireViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
@@ -44,12 +52,6 @@ class ClasseViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(ecole=self.request.user.ecole)
 
-
-
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from .models import Note, Bulletin
-from .serializers import NoteSerializer, BulletinSerializer
 
 
 class NoteViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
@@ -95,11 +97,31 @@ class BulletinViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
     @action(detail=True, methods=["post"])
     def generer_pdf(self, request, pk=None):
         bulletin = self.get_object()
-        url_pdf = generer_pdf_bulletin(bulletin)
-        bulletin.fichier_pdf = url_pdf
+        public_id = generer_pdf_bulletin(bulletin)
+        bulletin.fichier_pdf = public_id
         bulletin.save(update_fields=["fichier_pdf"])
-        return Response({"fichier_pdf": url_pdf})
+        return Response({"public_id": public_id})
 
+    @action(detail=True, methods=["get"])
+    def telecharger_pdf(self, request, pk=None):
+        bulletin = self.get_object()
+
+        public_id, _ = generer_pdf_bulletin(bulletin)
+        bulletin.fichier_pdf = public_id
+        bulletin.save(update_fields=["fichier_pdf"])
+
+        # private_download_url passe par la vraie API de téléchargement
+        # sécurisé de Cloudinary (api.cloudinary.com/.../download), pas par
+        # une URL de livraison — c'est la fonction faite spécifiquement
+        # pour les ressources type="authenticated".
+        url_signee = cloudinary.utils.private_download_url(
+            public_id,
+            "pdf",
+            resource_type="raw",
+            type="authenticated",
+            attachment=True,
+        )
+        return Response({"url": url_signee})
     @action(detail=False, methods=["get"])
     def rechercher(self, request):
         """

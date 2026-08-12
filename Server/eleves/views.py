@@ -12,15 +12,29 @@ class ParentViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
     serializer_class = ParentSerializer
 
     def perform_create(self, serializer):
-        serializer.save(ecole=self.request.user.ecole)
+        ecole = self.request.user.ecole
+        if ecole is None:
+            raise ValidationError(
+                "Impossible de créer un parent : aucune école n'est associée à ce compte."
+            )
+        serializer.save(ecole=ecole)
 
+
+from rest_framework.exceptions import ValidationError
 
 class EleveViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
     queryset = Eleve.objects.all()
     serializer_class = EleveSerializer
 
     def perform_create(self, serializer):
-        serializer.save(ecole=self.request.user.ecole)
+        ecole = self.request.user.ecole
+        if ecole is None:
+            raise ValidationError(
+                "Impossible de créer un élève : aucune école n'est associée à ce compte."
+            )
+        serializer.save(ecole=ecole)
+
+
 
 
 class InscriptionViewSet(viewsets.ModelViewSet):
