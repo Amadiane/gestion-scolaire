@@ -198,6 +198,16 @@ class Bulletin(models.Model):
     def __str__(self):
         return f"Bulletin {self.eleve} — {self.get_trimestre_display()}"
 
+    def save(self, *args, **kwargs):
+        creation = self._state.adding
+        super().save(*args, **kwargs)
+        if creation:
+            # Dès qu'un bulletin est créé (admin OU API), on recalcule
+            # immédiatement toute la classe — plus besoin d'attendre
+            # qu'une note soit ressaisie après coup pour que ça se peuple.
+            Bulletin.recalculer_classement(self.classe, self.annee_scolaire, self.trimestre)
+            self.refresh_from_db(fields=["moyenne_generale", "rang"])
+
     def calculer_moyenne(self):
         """
         Moyenne pondérée par coefficient, sur le barème réel du niveau
@@ -218,9 +228,9 @@ class Bulletin(models.Model):
     def recalculer_classement(classe, annee_scolaire, trimestre):
         """
         Recalcule moyenne ET rang de TOUS les bulletins d'une même classe,
-        pour un trimestre donné — le rang d'un élève dépend forcément des
-        autres élèves de sa classe, donc on ne peut jamais le calculer
-        élève par élève isolément.
+        pour un trimestre donné. Utilise .update() (pas .save()) pour ne
+        jamais redéclencher un signal post_save sur Bulletin — important
+        car cette méthode est elle-même appelée depuis un signal.
         """
         bulletins = Bulletin.objects.filter(
             classe=classe, annee_scolaire=annee_scolaire, trimestre=trimestre
@@ -230,21 +240,15 @@ class Bulletin(models.Model):
             moyenne = bulletin.calculer_moyenne()
             resultats.append((bulletin, moyenne))
 
-        # Trie du meilleur au moins bon ; les bulletins sans moyenne
-        # (aucune note saisie) sont mis à la fin, sans rang.
         resultats.sort(key=lambda x: (x[1] is None, -(x[1] or 0)))
 
         rang_actuel = 0
         for i, (bulletin, moyenne) in enumerate(resultats):
-            bulletin.moyenne_generale = moyenne
             if moyenne is not None:
                 rang_actuel += 1
-                bulletin.rang = rang_actuel
+                nouveau_rang = rang_actuel
             else:
-                bulletin.rang = None
-            bulletin.save(update_fields=["moyenne_generale", "rang"])
-
-    def valider(self, utilisateur):
-        self.statut = self.Statut.VALIDE
-        self.valide_par = utilisateur
-        self.save(update_fields=["statut", "valide_par"])
+                nouveau_rang = None
+            Bulletin.objects.filter(pk=bulletin.pk).update(
+                moyenne_generale=moyenne, rang=nouveau_rang
+            )
