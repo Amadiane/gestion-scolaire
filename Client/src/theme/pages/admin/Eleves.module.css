@@ -37,16 +37,25 @@
   white-space: nowrap;
 }
 
+.filtersRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
 .searchBar {
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
   max-width: 400px;
+  height: 44px;
   padding: 0 14px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  margin-bottom: 20px;
 }
 
 .searchBar input {
@@ -55,9 +64,40 @@
   background: none;
   border: none;
   outline: none;
-  padding: 11px 0;
   font-size: 14px;
   color: var(--color-text);
+}
+
+.classeSelect {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 36px 0 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  min-width: 180px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2396A0AC' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+}
+
+.classeSelect:hover {
+  border-color: var(--color-text-dim);
+}
+
+.classeSelect:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1);
 }
 
 .stateMsg {
@@ -86,13 +126,13 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 12px;
-  overflow-x: auto; /* évite que le tableau casse la mise en page sur mobile */
+  overflow-x: auto;
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 560px; /* force le scroll horizontal plutôt que d'écraser les colonnes */
+  min-width: 560px;
 }
 
 .table th {
@@ -115,6 +155,15 @@
 
 .table tr:last-child td {
   border-bottom: none;
+}
+
+.clickableRow {
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.clickableRow:hover {
+  background: var(--color-card);
 }
 
 .badge {
@@ -142,8 +191,6 @@
   color: var(--color-danger);
 }
 
-/* ===== Responsive ===== */
-
 @media (max-width: 640px) {
   .wrapper {
     padding: 20px 16px;
@@ -158,16 +205,16 @@
     justify-content: center;
   }
 
+  .filtersRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .searchBar {
     max-width: 100%;
   }
 
-  .clickableRow {
-  cursor: pointer;
-  transition: background 0.1s;
-    }
-
-    .clickableRow:hover {
-    background: var(--color-card);
-    }
+  .classeSelect {
+    width: 100%;
+  }
 }

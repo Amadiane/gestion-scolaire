@@ -1,3 +1,5 @@
+/* src/theme/pages/admin/AjouterEleveModal.module.css */
+
 .overlay {
   position: fixed;
   inset: 0;
@@ -114,26 +116,235 @@
 
 .field input,
 .field select {
-  padding: 10px 12px;
+  height: 42px;
+  padding: 0 12px;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   font-size: 14px;
+  font-family: inherit;
   background: var(--color-card);
   color: var(--color-text);
   min-width: 0;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.field select {
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2396A0AC' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 14px;
+  cursor: pointer;
 }
 
 .field input:focus,
 .field select:focus {
   outline: none;
   border-color: var(--color-primary);
-  background: #fff;
+  background-color: #fff;
 }
+
+.field select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ===== Section Parents ===== */
+
+.parentsSection {
+  border-top: 1px solid var(--color-border);
+  padding-top: 16px;
+}
+
+.parentsSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.parentsSectionHeader label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.addParentButton {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.addParentButton:hover {
+  background: var(--color-border);
+}
+
+.noParentMsg {
+  font-size: 12px;
+  color: var(--color-text-dim);
+  padding: 10px 0;
+}
+
+.parentRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 12px;
+  background: var(--color-card);
+  border-radius: 10px;
+}
+
+.parentRowTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modeToggle {
+  display: flex;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  padding: 2px;
+}
+
+.modeButton {
+  padding: 5px 12px;
+  border: none;
+  background: none;
+  border-radius: 18px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.modeButtonActive {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.parentSelect {
+  width: 100%;
+  height: 38px;
+  padding: 0 28px 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  background-color: #fff;
+  min-width: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2396A0AC' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 12px;
+  cursor: pointer;
+}
+
+.nouveauParentFields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nouveauParentFields input {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  background: #fff;
+  min-width: 0;
+}
+
+.nouveauParentFields input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.parentRowBottom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.typeLienSelect {
+  flex: 0 1 120px;
+  height: 36px;
+  padding: 0 26px 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  background-color: #fff;
+  min-width: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2396A0AC' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 12px;
+  cursor: pointer;
+}
+
+.contactPrincipalLabel {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.contactPrincipalLabel input {
+  width: auto;
+  height: auto;
+  cursor: pointer;
+}
+
+.removeParentButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.removeParentButton:hover {
+  background: #FCD5D5;
+}
+
+/* ===== Actions ===== */
 
 .actions {
   display: flex;
   gap: 10px;
   margin-top: 8px;
+  position: sticky;
+  bottom: 0;
+  background: var(--color-surface);
+  padding-top: 8px;
 }
 
 .cancelButton {

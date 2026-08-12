@@ -143,3 +143,34 @@ class BulletinViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+
+from .serializers import ClasseAvecEffectifSerializer
+from eleves.serializers import EleveSerializer
+from eleves.models import Eleve
+
+class ClasseViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
+    queryset = Classe.objects.all()
+    serializer_class = ClasseSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(ecole=self.request.user.ecole)
+
+    def list(self, request, *args, **kwargs):
+        # Utilise le serializer enrichi (avec effectif) uniquement pour
+        # la liste — la création/modification garde le serializer simple.
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = ClasseAvecEffectifSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["get"])
+    def eleves(self, request, pk=None):
+        """Renvoie les élèves inscrits dans cette classe, pour l'année
+        scolaire de la classe elle-même."""
+        classe = self.get_object()
+        eleves_ids = classe.inscriptions.filter(
+            annee_scolaire=classe.annee_scolaire
+        ).values_list("eleve_id", flat=True)
+        eleves = Eleve.objects.filter(id__in=eleves_ids)
+        serializer = EleveSerializer(eleves, many=True)
+        return Response(serializer.data)

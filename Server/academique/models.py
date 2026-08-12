@@ -199,12 +199,18 @@ class Bulletin(models.Model):
         return f"Bulletin {self.eleve} — {self.get_trimestre_display()}"
 
     def calculer_moyenne(self):
+        """
+        Moyenne pondérée par coefficient, sur le barème réel du niveau
+        (10 pour le primaire, 20 pour collège/lycée) — plus de
+        normalisation forcée à 20, puisque toutes les notes d'un même
+        bulletin partagent le même barème (celui de la classe/niveau).
+        """
         notes = Note.objects.filter(
             eleve=self.eleve, annee_scolaire=self.annee_scolaire, trimestre=self.trimestre
         )
         if not notes.exists():
             return None
-        total_pondere = sum(n.moyenne_ponderee * n.matiere.coefficient for n in notes)
+        total_pondere = sum(n.valeur * n.matiere.coefficient for n in notes)
         total_coefficients = sum(n.matiere.coefficient for n in notes)
         return round(total_pondere / total_coefficients, 2) if total_coefficients else None
 

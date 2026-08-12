@@ -29,6 +29,9 @@ const CONFIG = {
   API_PARENTS: `${BASE_URL}/api/parents/`,
   API_INSCRIPTIONS: `${BASE_URL}/api/inscriptions/`,
   API_BULLETIN_TELECHARGER: (id) => `${BASE_URL}/api/bulletins/${id}/telecharger_pdf/`,
+  API_CLASSE_ELEVES: (id) => `${BASE_URL}/api/classes/${id}/eleves/`,
+  API_PARENTS_CHOIX: `${BASE_URL}/api/parents/`,
+  API_ELEVE_LIER_PARENT: (id) => `${BASE_URL}/api/eleves/${id}/lier_parent/`,
 
   CLOUDINARY_NAME: "kdcjs7fx",
 };

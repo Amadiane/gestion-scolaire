@@ -40,3 +40,34 @@ class InscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Inscription
         fields = ["id", "eleve", "classe", "annee_scolaire", "date_inscription", "statut"]
+
+class ParentChoixSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Parent
+        fields = ["id", "nom", "prenom", "telephone"]
+
+class EleveResumeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Eleve
+        fields = ["id", "nom", "prenom", "matricule", "photo"]
+
+
+class ParentDetailSerializer(serializers.ModelSerializer):
+    enfants = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Parent
+        fields = ["id", "ecole", "nom", "prenom", "telephone", "email", "adresse", "date_creation", "enfants"]
+
+    def get_enfants(self, obj):
+        # Passe par RelationParentEleve pour récupérer le type de lien
+        # (père/mère/tuteur) en même temps que chaque élève lié.
+        relations = obj.relationparenteleve_set.select_related("eleve")
+        return [
+            {
+                **EleveResumeSerializer(rel.eleve).data,
+                "type_lien": rel.type_lien,
+                "contact_principal": rel.contact_principal,
+            }
+            for rel in relations
+        ]

@@ -60,3 +60,31 @@ class BulletinSerializer(serializers.ModelSerializer):
             "date_generation", "valide_par",
         ]
         read_only_fields = ["ecole", "moyenne_generale", "date_generation", "valide_par"]
+
+class ClasseAvecEffectifSerializer(serializers.ModelSerializer):
+    effectif = serializers.SerializerMethodField()
+    niveau_nom = serializers.CharField(source='niveau.nom', read_only=True)
+    bareme_note = serializers.IntegerField(source='niveau.bareme_note', read_only=True)
+
+    class Meta:
+        model = Classe
+        fields = ["id", "nom", "niveau_nom", "bareme_note", "annee_scolaire", "effectif_max", "effectif"]
+
+    def get_effectif(self, obj):
+        return obj.inscriptions.filter(annee_scolaire=obj.annee_scolaire).count()
+
+class BulletinSerializer(serializers.ModelSerializer):
+    eleve_nom = serializers.SerializerMethodField()
+    classe_nom = serializers.CharField(source='classe.nom', read_only=True)
+
+    class Meta:
+        model = Bulletin
+        fields = [
+            "id", "ecole", "eleve", "eleve_nom", "classe", "classe_nom",
+            "annee_scolaire", "trimestre", "moyenne_generale", "rang",
+            "statut", "fichier_pdf", "date_generation", "valide_par",
+        ]
+        read_only_fields = ["ecole", "moyenne_generale", "date_generation", "valide_par"]
+
+    def get_eleve_nom(self, obj):
+        return f"{obj.eleve.prenom} {obj.eleve.nom}"
