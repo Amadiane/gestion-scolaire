@@ -1,7 +1,7 @@
 const BASE_URL =
   window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://127.0.0.1:8000"
-    : "https://gestionscolaire.onrender.com"; // à remplacer une fois déployé sur Render
+    : "https://gestion-scolaire-5epe.onrender.com"; // à remplacer une fois déployé sur Render
 
 const CONFIG = {
   BASE_URL,
@@ -32,6 +32,8 @@ const CONFIG = {
   API_CLASSE_ELEVES: (id) => `${BASE_URL}/api/classes/${id}/eleves/`,
   API_PARENTS_CHOIX: `${BASE_URL}/api/parents/`,
   API_ELEVE_LIER_PARENT: (id) => `${BASE_URL}/api/eleves/${id}/lier_parent/`,
+  API_UTILISATEURS: `${BASE_URL}/api/utilisateurs-gestion/`,
+  API_UTILISATEUR_DETAIL: (id) => `${BASE_URL}/api/utilisateurs-gestion/${id}/`,
 
   CLOUDINARY_NAME: "kdcjs7fx",
 };

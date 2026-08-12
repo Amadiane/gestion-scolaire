@@ -12,6 +12,10 @@ import Bulletins from './pages/admin/Bulletins.jsx';
 import FicheParent from './pages/admin/FicheParent.jsx';
 import AnneesScolaires from './pages/admin/AnneesScolaires.jsx';
 import FicheAnneeScolaire from './pages/admin/FicheAnneeScolaire.jsx';
+import Utilisateurs from './pages/admin/Utilisateurs.jsx';
+import DashboardEnseignant from './pages/enseignant/DashboardEnseignant.jsx';
+import EnseignantLayout from './layouts/EnseignantLayout.jsx';
+
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('access');
@@ -43,6 +47,19 @@ function App() {
         <Route path="parents/:id" element={<FicheParent />} />
         <Route path="annees-scolaires" element={<AnneesScolaires />} />
         <Route path="annees-scolaires/:id" element={<FicheAnneeScolaire />} />
+        <Route path="utilisateurs" element={<Utilisateurs />} />
+      </Route>
+
+      <Route
+        path="/enseignant"
+        element={
+          <PrivateRoute>
+            <EnseignantLayout />
+          </PrivateRoute>
+        }
+      >
+        <Route index element={<DashboardEnseignant />} />
+        {/* futures pages : mes-classes, notes */}
       </Route>
 
       <Route path="*" element={<Navigate to="/login" replace />} />

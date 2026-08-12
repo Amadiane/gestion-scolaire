@@ -1,23 +1,14 @@
 import { NavLink } from 'react-router-dom';
-import {
-  LayoutDashboard, Users, School, BookOpen, FileText, UserCog, LogOut, X,
-} from 'lucide-react';
-import styles from '../../theme/components/Sidebar.module.css';
-import { Calendar } from 'lucide-react';
-import { UserCog as UserCogIcon } from 'lucide-react'; // si UserCog pas déjà importé sous ce nom
+import { LayoutDashboard, BookOpen, School, LogOut, X } from 'lucide-react';
+import styles from '../../theme/components/SidebarEnseignant.module.css';
 
 const NAV_ITEMS = [
-  { to: '/dashboardAdmin', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
-  { to: '/dashboardAdmin/eleves', label: 'Élèves', icon: Users },
-  { to: '/dashboardAdmin/parents', label: 'Parents', icon: UserCog },
-  { to: '/dashboardAdmin/classes', label: 'Classes', icon: School },
-  { to: '/dashboardAdmin/notes', label: 'Notes', icon: BookOpen },
-  { to: '/dashboardAdmin/bulletins', label: 'Bulletins', icon: FileText },
-  { to: '/dashboardAdmin/annees-scolaires', label: 'Années scolaires', icon: Calendar },
-  { to: '/dashboardAdmin/utilisateurs', label: 'Utilisateurs', icon: UserCogIcon }, // nouveau
+  { to: '/enseignant', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
+  { to: '/enseignant/mes-classes', label: 'Mes classes', icon: School },
+  { to: '/enseignant/notes', label: 'Saisir des notes', icon: BookOpen },
 ];
 
-const Sidebar = ({ isOpen, onClose }) => {
+const SidebarEnseignant = ({ isOpen, onClose }) => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   const handleLogout = () => {
@@ -36,7 +27,7 @@ const Sidebar = ({ isOpen, onClose }) => {
           <div className={styles.logo}>SI</div>
           <div>
             <div className={styles.brand}>Sylium</div>
-            <div className={styles.brandSub}>Gestion Scolaire</div>
+            <div className={styles.brandSub}>Espace Enseignant</div>
           </div>
           <button className={styles.closeButton} onClick={onClose} aria-label="Fermer le menu">
             <X size={20} />
@@ -65,7 +56,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             </div>
             <div>
               <div className={styles.userName}>{user.first_name || user.username}</div>
-              <div className={styles.userRole}>{user.role}</div>
+              <div className={styles.userRole}>Enseignant</div>
             </div>
           </div>
           <button className={styles.logoutButton} onClick={handleLogout}>
@@ -77,4 +68,4 @@ const Sidebar = ({ isOpen, onClose }) => {
   );
 };
 
-export default Sidebar;
+export default SidebarEnseignant;

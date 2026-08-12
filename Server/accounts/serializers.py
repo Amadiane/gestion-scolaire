@@ -3,12 +3,31 @@ from .models import Utilisateur
 
 
 class UtilisateurSerializer(serializers.ModelSerializer):
-    """
-    Convertit un objet Utilisateur Django <-> JSON.
-    C'est l'équivalent, côté API, de ce qu'un template HTML fait pour l'affichage.
-    """
     class Meta:
         model = Utilisateur
-        fields = ["id", "username", "first_name", "last_name", "role", "ecole", "telephone"]
-        # Jamais le mot de passe ici, même haché — un serializer expose
-        # exactement ce qu'on lui autorise, rien de plus.
+        fields = [
+            "id", "username", "first_name", "last_name", "email",
+            "role", "telephone", "ecole", "is_active", "date_joined",
+        ]
+        read_only_fields = ["ecole", "date_joined"]
+
+
+class UtilisateurCreateSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, min_length=6)
+
+    class Meta:
+        model = Utilisateur
+        fields = [
+            "id", "username", "first_name", "last_name", "email",
+            "role", "telephone", "password",
+        ]
+
+    def create(self, validated_data):
+        password = validated_data.pop("password")
+        user = Utilisateur(**validated_data)
+        # set_password hache correctement le mot de passe (jamais stocké
+        # en clair) — un simple user.password = "..." l'enregistrerait
+        # tel quel, faille de sécurité majeure.
+        user.set_password(password)
+        user.save()
+        return user
