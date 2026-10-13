@@ -35,6 +35,8 @@ const CONFIG = {
   API_UTILISATEURS: `${BASE_URL}/api/utilisateurs-gestion/`,
   API_UTILISATEUR_DETAIL: (id) => `${BASE_URL}/api/utilisateurs-gestion/${id}/`,
 
+  API_DASHBOARD: `${BASE_URL}/api/statistiques/dashboard/`,
+
   CLOUDINARY_NAME: "kdcjs7fx",
 };
 
