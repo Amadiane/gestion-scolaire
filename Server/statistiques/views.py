@@ -13,6 +13,11 @@ from finance.services import calculer_situations
 @api_view(["GET"])
 def dashboard(request):
     user = request.user
+
+    # L'espace enseignant a son propre tableau de bord (/api/mes-affectations/).
+    if getattr(user, "role", None) == "enseignant" and not user.is_superuser:
+        return Response({"detail": "Tableau de bord non disponible pour ce rôle."}, status=403)
+
     ecole = user.ecole
     if ecole is None:
         return Response({"detail": "Aucune école associée à ce compte."}, status=400)

@@ -5,7 +5,9 @@ from decimal import Decimal
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from academique.models import AnneeScolaire, Bulletin, Classe, Matiere, Niveau, Note
+from academique.models import (
+    Affectation, AnneeScolaire, Bulletin, Classe, Matiere, Niveau, Note,
+)
 from accounts.models import Utilisateur
 from eleves.models import Eleve, Inscription, Parent, RelationParentEleve
 from finance.models import FraisScolarite, Paiement, RemiseEleve
@@ -147,7 +149,7 @@ class Command(BaseCommand):
 
         # --- Finance : frais, paiements, remises ---
         if FraisScolarite.objects.filter(ecole=ecole).exists():
-            self.stdout.write(self.style.WARNING("Finance déjà présente : rien de plus à créer."))
+            self.stdout.write(self.style.WARNING("Finance déjà présente : on passe à la suite."))
         else:
             for nom_niveau, lignes in TARIFS.items():
                 for libelle, montant in lignes:
@@ -184,6 +186,16 @@ class Command(BaseCommand):
                     ecole=ecole, eleve=insc.eleve, annee_scolaire=annee,
                     montant=100000, motif="Fratrie",
                 )
+
+        # --- Affectations : l'enseignant de démo n'a QUE ces enseignements ---
+        # La 10ème A reste volontairement hors de sa portée, pour montrer le cloisonnement.
+        for classe, matiere in [
+            (classes[0], matieres[0]), (classes[0], matieres[1]),
+            (classes[1], matieres[0]), (classes[1], matieres[2]),
+        ]:
+            Affectation.objects.get_or_create(
+                ecole=ecole, enseignant=enseignant, classe=classe, matiere=matiere
+            )
 
         self.stdout.write(self.style.SUCCESS(
             "Démo prête. Comptes : demo_directeur / demo_enseignant / demo_comptable, mot de passe : Demo@2026"

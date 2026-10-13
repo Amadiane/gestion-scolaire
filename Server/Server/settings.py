@@ -82,12 +82,22 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# REST_FRAMEWORK = {
+#     "DEFAULT_AUTHENTICATION_CLASSES": (
+#         "rest_framework_simplejwt.authentication.JWTAuthentication",
+#     ),
+#     "DEFAULT_PERMISSION_CLASSES": (
+#         "tenants.permissions.IsSubscriptionActive",
+#     ),
+# }
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": (
         "tenants.permissions.IsSubscriptionActive",
+        "tenants.permissions.IsStaffUser",
+        "tenants.permissions.EnseignantLectureSeule",
     ),
 }
 

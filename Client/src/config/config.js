@@ -44,6 +44,9 @@ const CONFIG = {
 
   API_DASHBOARD: `${BASE_URL}/api/statistiques/dashboard/`,
 
+  API_AFFECTATIONS: `${BASE_URL}/api/affectations/`,
+  API_MES_AFFECTATIONS: `${BASE_URL}/api/mes-affectations/`,
+
   CLOUDINARY_NAME: "kdcjs7fx",
 };
 

@@ -1,27 +1,10 @@
-# from rest_framework import permissions
-
-
-# class IsSameSchool(permissions.BasePermission):
-#     """
-#     Vérifie que l'objet demandé appartient bien à l'école de l'utilisateur
-#     connecté. Complète (ne remplace pas) le filtrage au niveau du queryset
-#     ci-dessous — une deuxième barrière, au cas où.
-#     """
-#     def has_object_permission(self, request, view, obj):
-#         if request.user.is_superuser:
-#             return True
-#         return getattr(obj, "ecole_id", None) == request.user.ecole_id
-
-
 from rest_framework import permissions
+
+ROLES_EXTERNES = ("parent", "eleve")
 
 
 class IsSubscriptionActive(permissions.BasePermission):
-    """
-    Contrôle réel de l'abonnement pour les requêtes API authentifiées par JWT.
-    S'exécute APRÈS que DRF ait identifié l'utilisateur via son token —
-    contrairement au middleware, qui ne peut pas voir cet utilisateur à temps.
-    """
+    """Abonnement valide et compte actif (s'exécute après le décodage du JWT)."""
     message = "Accès bloqué : abonnement expiré ou compte désactivé."
 
     def has_permission(self, request, view):
@@ -32,3 +15,37 @@ class IsSubscriptionActive(permissions.BasePermission):
             return True
         ecole = getattr(user, "ecole", None)
         return ecole is not None and ecole.acces_autorise
+
+
+class IsStaffUser(permissions.BasePermission):
+    """Les parents et élèves n'ont pas accès à l'API du personnel."""
+    message = "Cet espace est réservé au personnel de l'établissement."
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        return user.is_superuser or getattr(user, "role", "") not in ROLES_EXTERNES
+
+
+class EnseignantLectureSeule(permissions.BasePermission):
+    """Par défaut, un enseignant ne peut que lire. Les vues où il peut
+    écrire (les notes) déclarent leurs propres permissions."""
+    message = "Les enseignants ont un accès en lecture seule sur cette ressource."
+
+    def has_permission(self, request, view):
+        user = request.user
+        if getattr(user, "role", None) == "enseignant" and not user.is_superuser:
+            return request.method in permissions.SAFE_METHODS
+        return True
+
+
+class IsDirecteur(permissions.BasePermission):
+    message = "Seul un directeur peut effectuer cette action."
+
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(
+            user and user.is_authenticated
+            and (user.is_superuser or getattr(user, "role", None) == "directeur")
+        )

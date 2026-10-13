@@ -1,5 +1,8 @@
 from rest_framework import serializers
-from .models import Parent, Eleve, RelationParentEleve, Inscription
+
+from tenants.serializers import MemeEcoleMixin
+
+from .models import Eleve, Inscription, Parent, RelationParentEleve
 
 
 class ParentSerializer(serializers.ModelSerializer):
@@ -9,16 +12,21 @@ class ParentSerializer(serializers.ModelSerializer):
         read_only_fields = ["ecole", "date_creation"]
 
 
-class RelationParentEleveSerializer(serializers.ModelSerializer):
+class ParentChoixSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Parent
+        fields = ["id", "nom", "prenom", "telephone"]
+
+
+class RelationParentEleveSerializer(MemeEcoleMixin, serializers.ModelSerializer):
     class Meta:
         model = RelationParentEleve
         fields = ["id", "parent", "eleve", "type_lien", "contact_principal"]
 
 
 class EleveSerializer(serializers.ModelSerializer):
-    # CloudinaryField n'est pas un type standard reconnu automatiquement
-    # par DRF — on le déclare explicitement. FileField gère à la fois
-    # la lecture (renvoie l'URL Cloudinary) et l'écriture (upload direct).
+    # CloudinaryField n'est pas reconnu par DRF : on le déclare explicitement.
+    # FileField gère la lecture (URL Cloudinary) et l'écriture (upload).
     photo = serializers.FileField(required=False, allow_null=True)
     classe_actuelle_nom = serializers.SerializerMethodField()
 
@@ -36,16 +44,6 @@ class EleveSerializer(serializers.ModelSerializer):
         return classe.nom if classe else None
 
 
-class InscriptionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Inscription
-        fields = ["id", "eleve", "classe", "annee_scolaire", "date_inscription", "statut"]
-
-class ParentChoixSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Parent
-        fields = ["id", "nom", "prenom", "telephone"]
-
 class EleveResumeSerializer(serializers.ModelSerializer):
     photo = serializers.FileField(required=False, allow_null=True)
 
@@ -53,16 +51,20 @@ class EleveResumeSerializer(serializers.ModelSerializer):
         model = Eleve
         fields = ["id", "nom", "prenom", "matricule", "photo"]
 
+
 class ParentDetailSerializer(serializers.ModelSerializer):
     enfants = serializers.SerializerMethodField()
 
     class Meta:
         model = Parent
-        fields = ["id", "ecole", "nom", "prenom", "telephone", "email", "adresse", "date_creation", "enfants"]
+        fields = [
+            "id", "ecole", "nom", "prenom", "telephone", "email",
+            "adresse", "date_creation", "enfants",
+        ]
 
     def get_enfants(self, obj):
-        # Passe par RelationParentEleve pour récupérer le type de lien
-        # (père/mère/tuteur) en même temps que chaque élève lié.
+        # Passe par la table de liaison pour récupérer le type de lien
+        # (père, mère, tuteur) en même temps que chaque élève.
         relations = obj.relationparenteleve_set.select_related("eleve")
         return [
             {
@@ -72,3 +74,9 @@ class ParentDetailSerializer(serializers.ModelSerializer):
             }
             for rel in relations
         ]
+
+
+class InscriptionSerializer(MemeEcoleMixin, serializers.ModelSerializer):
+    class Meta:
+        model = Inscription
+        fields = ["id", "eleve", "classe", "annee_scolaire", "date_inscription", "statut"]

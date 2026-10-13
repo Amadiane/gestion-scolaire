@@ -7,20 +7,32 @@ import FicheEleve from './pages/admin/FicheEleve.jsx';
 import Classes from './pages/admin/Classes.jsx';
 import RosterClasse from './pages/admin/RosterClasse.jsx';
 import Parents from './pages/admin/Parents.jsx';
+import FicheParent from './pages/admin/FicheParent.jsx';
 import Notes from './pages/admin/Notes.jsx';
 import Bulletins from './pages/admin/Bulletins.jsx';
-import FicheParent from './pages/admin/FicheParent.jsx';
 import AnneesScolaires from './pages/admin/AnneesScolaires.jsx';
 import FicheAnneeScolaire from './pages/admin/FicheAnneeScolaire.jsx';
 import Utilisateurs from './pages/admin/Utilisateurs.jsx';
-import DashboardEnseignant from './pages/enseignant/DashboardEnseignant.jsx';
-import EnseignantLayout from './layouts/EnseignantLayout.jsx';
 import Finance from './pages/admin/Finance.jsx';
+import Affectations from './pages/admin/Affectations.jsx';
+import EnseignantLayout from './layouts/EnseignantLayout.jsx';
+import DashboardEnseignant from './pages/enseignant/DashboardEnseignant.jsx';
+import MesClasses from './pages/enseignant/MesClasses.jsx';
+import NotesEnseignant from './pages/enseignant/NotesEnseignant.jsx';
 
+const ROLES_ADMIN = ['directeur', 'secretaire', 'comptable', 'surveillant'];
+const ACCUEIL = { enseignant: '/enseignant' };
+ROLES_ADMIN.forEach((r) => { ACCUEIL[r] = '/dashboardAdmin'; });
 
-const PrivateRoute = ({ children }) => {
+// Le contrôle réel est fait par l'API ; ceci évite d'afficher des pages vides.
+const PrivateRoute = ({ children, roles }) => {
   const token = localStorage.getItem('access');
-  return token ? children : <Navigate to="/login" replace />;
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  if (!token) return <Navigate to="/login" replace />;
+  if (roles && !roles.includes(user.role)) {
+    return <Navigate to={ACCUEIL[user.role] || '/login'} replace />;
+  }
+  return children;
 };
 
 function App() {
@@ -31,37 +43,38 @@ function App() {
       <Route
         path="/dashboardAdmin"
         element={
-          <PrivateRoute>
+          <PrivateRoute roles={ROLES_ADMIN}>
             <AdminLayout />
           </PrivateRoute>
         }
       >
         <Route index element={<DashboardAdmin />} />
         <Route path="eleves" element={<Eleves />} />
-        <Route path="eleves" element={<Eleves />} />
         <Route path="eleves/:id" element={<FicheEleve />} />
         <Route path="classes" element={<Classes />} />
         <Route path="classes/:id" element={<RosterClasse />} />
         <Route path="parents" element={<Parents />} />
+        <Route path="parents/:id" element={<FicheParent />} />
         <Route path="notes" element={<Notes />} />
         <Route path="bulletins" element={<Bulletins />} />
-        <Route path="parents/:id" element={<FicheParent />} />
+        <Route path="finance" element={<Finance />} />
         <Route path="annees-scolaires" element={<AnneesScolaires />} />
         <Route path="annees-scolaires/:id" element={<FicheAnneeScolaire />} />
         <Route path="utilisateurs" element={<Utilisateurs />} />
-        <Route path="finance" element={<Finance />} />
+        <Route path="affectations" element={<Affectations />} />
       </Route>
 
       <Route
         path="/enseignant"
         element={
-          <PrivateRoute>
+          <PrivateRoute roles={['enseignant']}>
             <EnseignantLayout />
           </PrivateRoute>
         }
       >
         <Route index element={<DashboardEnseignant />} />
-        {/* futures pages : mes-classes, notes */}
+        <Route path="mes-classes" element={<MesClasses />} />
+        <Route path="notes" element={<NotesEnseignant />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/login" replace />} />

@@ -40,3 +40,10 @@ class BulletinAdmin(admin.ModelAdmin):
     list_filter = ("ecole", "trimestre", "statut", "classe")
     search_fields = ("eleve__nom", "eleve__prenom")
     readonly_fields = ("moyenne_generale", "rang", "fichier_pdf", "date_generation")
+
+from .models import Affectation
+
+@admin.register(Affectation)
+class AffectationAdmin(admin.ModelAdmin):
+    list_display = ("enseignant", "classe", "matiere", "ecole")
+    list_filter = ("ecole", "classe")

@@ -252,3 +252,26 @@ class Bulletin(models.Model):
             Bulletin.objects.filter(pk=bulletin.pk).update(
                 moyenne_generale=moyenne, rang=nouveau_rang
             )
+
+class Affectation(models.Model):
+    """Un enseignant donne une matière dans une classe."""
+    ecole = models.ForeignKey(School, on_delete=models.CASCADE, related_name="affectations")
+    enseignant = models.ForeignKey(
+        "accounts.Utilisateur", on_delete=models.CASCADE, related_name="affectations",
+        limit_choices_to={"role": "enseignant"},
+    )
+    classe = models.ForeignKey(Classe, on_delete=models.CASCADE, related_name="affectations")
+    matiere = models.ForeignKey(Matiere, on_delete=models.CASCADE, related_name="affectations")
+
+    class Meta:
+        verbose_name = "Affectation"
+        verbose_name_plural = "Affectations"
+        ordering = ["enseignant__last_name", "classe__nom", "matiere__nom"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["enseignant", "classe", "matiere"], name="affectation_unique"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.enseignant} — {self.matiere} en {self.classe}"
