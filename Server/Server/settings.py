@@ -45,10 +45,12 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
+    
 
     "cloudinary_storage",
     "cloudinary",
+
+    'django.contrib.staticfiles',
 
     "rest_framework",
     "rest_framework_simplejwt",
@@ -143,7 +145,7 @@ if DATABASE_URL:
         "default": dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
     }
 else:
-    # Utilisé en local, sur votre PC
+    # Utilisé en xlocal, sur votre PC
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
