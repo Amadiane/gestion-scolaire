@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, School, UserCog, BookOpen, AlertTriangle } from 'lucide-react';
+import { Users, School, UserCog, BookOpen, Wallet, AlertCircle, AlertTriangle } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
+import { formatGNF } from '../../utils/finance.js';
 import styles from '../../theme/pages/admin/DashboardAdmin.module.css';
 
 const TRIMESTRE = { t1: '1er trim.', t2: '2ème trim.', t3: '3ème trim.' };
@@ -33,6 +34,11 @@ const DashboardAdmin = () => {
     { label: 'Classes', value: stats.total_classes, icon: School },
     { label: 'Parents', value: stats.total_parents, icon: UserCog },
     { label: 'Notes saisies', value: stats.total_notes, icon: BookOpen },
+    // Ces deux cartes n'existent que pour le directeur et le comptable.
+    ...(stats.finance ? [
+      { label: 'Encaissé ce mois (GNF)', value: formatGNF(stats.finance.encaisse_mois), icon: Wallet },
+      { label: 'Reste à recouvrer (GNF)', value: formatGNF(stats.finance.reste_a_recouvrer), icon: AlertCircle },
+    ] : []),
   ];
 
   const maxEffectif = stats ? Math.max(1, ...stats.classes.map((c) => c.effectif)) : 1;

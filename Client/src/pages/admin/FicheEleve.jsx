@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Phone, Mail, Users, FileText, Download } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, FileText, Download } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
+import SituationFinanciere from './SituationFinanciere.jsx';
 import styles from '../../theme/pages/admin/FicheEleve.module.css';
+
+const TRIMESTRE_LABEL = { t1: '1er trimestre', t2: '2ème trimestre', t3: '3ème trimestre' };
 
 const FicheEleve = () => {
   const { id } = useParams();
@@ -23,9 +26,7 @@ const FicheEleve = () => {
           api.get(CONFIG.API_BULLETINS),
         ]);
         setEleve(resEleve.data);
-        // Filtre côté client : les bulletins de CET élève seulement.
-        // TenantScopedQuerysetMixin a déjà limité à l'école, il reste
-        // juste à isoler l'élève précis parmi ceux de l'école.
+        // Le backend limite déjà à l'école ; on isole ici l'élève.
         setBulletins(resBulletins.data.filter((b) => b.eleve === Number(id)));
       } catch {
         setError("Impossible de charger la fiche de cet élève.");
@@ -37,43 +38,38 @@ const FicheEleve = () => {
   }, [id]);
 
   const handleTelechargerPdf = async (bulletin) => {
-  setGenererPdfId(bulletin.id);
-  try {
-    // telecharger_pdf gère la génération automatiquement si besoin —
-    // plus besoin d'appeler generer_pdf séparément avant.
-    const resUrl = await api.get(CONFIG.API_BULLETIN_TELECHARGER(bulletin.id));
-    const response = await fetch(resUrl.data.url);
+    setGenererPdfId(bulletin.id);
+    try {
+      // telecharger_pdf génère le PDF puis renvoie une URL de téléchargement.
+      const resUrl = await api.get(CONFIG.API_BULLETIN_TELECHARGER(bulletin.id));
+      const response = await fetch(resUrl.data.url);
 
-    if (!response.ok) {
-      const texteErreur = await response.text();
-      console.error('Réponse Cloudinary non valide :', response.status, texteErreur);
-      throw new Error(`Cloudinary a refusé la requête (${response.status})`);
+      if (!response.ok) {
+        throw new Error(`Téléchargement refusé (${response.status})`);
+      }
+
+      const blob = await response.blob();
+      if (blob.size < 100) {
+        throw new Error('Le fichier reçu ne semble pas être un PDF valide.');
+      }
+
+      const nomEleve = `${eleve.prenom}_${eleve.nom}`.replace(/\s+/g, '_');
+      const nomTrimestre = bulletin.trimestre.toUpperCase();
+
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `bulletin_${nomEleve}_${nomTrimestre}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      alert(err.message || 'Impossible de télécharger ce bulletin.');
+    } finally {
+      setGenererPdfId(null);
     }
-
-    const blob = await response.blob();
-    if (blob.size < 100) {
-      const texte = await blob.text();
-      console.error('Fichier suspect (trop petit) :', texte);
-      throw new Error('Le fichier reçu ne semble pas être un PDF valide.');
-    }
-
-    const nomEleve = `${eleve.prenom}_${eleve.nom}`.replace(/\s+/g, '_');
-    const nomTrimestre = bulletin.trimestre === 't1' ? 'T1' : bulletin.trimestre === 't2' ? 'T2' : 'T3';
-
-    const blobUrl = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = blobUrl;
-    link.download = `bulletin_${nomEleve}_${nomTrimestre}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(blobUrl);
-  } catch (err) {
-    alert(err.message || "Impossible de télécharger ce bulletin.");
-  } finally {
-    setGenererPdfId(null);
-  }
-};
+  };
 
   if (loading) return <div className={styles.wrapper}><p className={styles.stateMsg}>Chargement...</p></div>;
   if (error) return <div className={styles.wrapper}><p className={styles.errorMsg}>{error}</p></div>;
@@ -127,11 +123,9 @@ const FicheEleve = () => {
               {bulletins.map((b) => (
                 <li key={b.id} className={styles.bulletinItem}>
                   <div>
-                    <span className={styles.bulletinTrimestre}>
-                      {b.trimestre === 't1' ? '1er trimestre' : b.trimestre === 't2' ? '2ème trimestre' : '3ème trimestre'}
-                    </span>
+                    <span className={styles.bulletinTrimestre}>{TRIMESTRE_LABEL[b.trimestre]}</span>
                     <span className={styles.bulletinMoyenne}>
-                      {b.moyenne_generale != null ? `Moyenne : ${b.moyenne_generale}/20` : 'Pas encore calculée'}
+                      {b.moyenne_generale != null ? `Moyenne : ${b.moyenne_generale}` : 'Pas encore calculée'}
                       {b.rang && ` · Rang : ${b.rang}`}
                     </span>
                   </div>
@@ -148,6 +142,8 @@ const FicheEleve = () => {
             </ul>
           )}
         </div>
+
+        <SituationFinanciere eleveId={id} />
       </div>
     </div>
   );

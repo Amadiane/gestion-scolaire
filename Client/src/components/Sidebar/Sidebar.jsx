@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom';
 import {
-  LayoutDashboard, Users, School, BookOpen, FileText, UserCog, LogOut, X,
+  LayoutDashboard, Users, School, BookOpen, FileText, UserCog,
+  Calendar, Wallet, ShieldCheck, LogOut, X,
 } from 'lucide-react';
 import styles from '../../theme/components/Sidebar.module.css';
-import { Calendar } from 'lucide-react';
-import { UserCog as UserCogIcon } from 'lucide-react'; // si UserCog pas déjà importé sous ce nom
 
+// `roles` limite l'affichage du lien. Le vrai contrôle d'accès reste côté
+// backend : masquer un lien n'est qu'une question d'ergonomie.
 const NAV_ITEMS = [
   { to: '/dashboardAdmin', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
   { to: '/dashboardAdmin/eleves', label: 'Élèves', icon: Users },
@@ -13,8 +14,9 @@ const NAV_ITEMS = [
   { to: '/dashboardAdmin/classes', label: 'Classes', icon: School },
   { to: '/dashboardAdmin/notes', label: 'Notes', icon: BookOpen },
   { to: '/dashboardAdmin/bulletins', label: 'Bulletins', icon: FileText },
+  { to: '/dashboardAdmin/finance', label: 'Finance', icon: Wallet, roles: ['directeur', 'comptable'] },
   { to: '/dashboardAdmin/annees-scolaires', label: 'Années scolaires', icon: Calendar },
-  { to: '/dashboardAdmin/utilisateurs', label: 'Utilisateurs', icon: UserCogIcon }, // nouveau
+  { to: '/dashboardAdmin/utilisateurs', label: 'Utilisateurs', icon: ShieldCheck, roles: ['directeur'] },
 ];
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -26,6 +28,8 @@ const Sidebar = ({ isOpen, onClose }) => {
     localStorage.removeItem('user');
     window.location.href = '/login';
   };
+
+  const liens = NAV_ITEMS.filter((item) => !item.roles || item.roles.includes(user.role));
 
   return (
     <>
@@ -44,7 +48,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         </div>
 
         <nav className={styles.nav}>
-          {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
+          {liens.map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}
               to={to}

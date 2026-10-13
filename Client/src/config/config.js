@@ -35,6 +35,13 @@ const CONFIG = {
   API_UTILISATEURS: `${BASE_URL}/api/utilisateurs-gestion/`,
   API_UTILISATEUR_DETAIL: (id) => `${BASE_URL}/api/utilisateurs-gestion/${id}/`,
 
+  API_FRAIS: `${BASE_URL}/api/frais/`,
+  API_PAIEMENTS: `${BASE_URL}/api/paiements/`,
+  API_PAIEMENT_RECU: (id) => `${BASE_URL}/api/paiements/${id}/recu/`,
+  API_FINANCE_SITUATION: (eleveId) => `${BASE_URL}/api/finance/situation/?eleve=${eleveId}`,
+  API_FINANCE_ARRIERES: `${BASE_URL}/api/finance/arrieres/`,
+  API_FINANCE_REMISE: `${BASE_URL}/api/finance/remise/`,
+
   API_DASHBOARD: `${BASE_URL}/api/statistiques/dashboard/`,
 
   CLOUDINARY_NAME: "kdcjs7fx",

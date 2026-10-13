@@ -1,14 +1,19 @@
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Sum
+from django.utils import timezone
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from academique.models import AnneeScolaire, Classe, Note, Bulletin
+from academique.models import AnneeScolaire, Bulletin, Classe, Note
 from eleves.models import Eleve, Parent
+from finance.models import Paiement
+from finance.permissions import ROLES_FINANCE
+from finance.services import calculer_situations
 
 
 @api_view(["GET"])
 def dashboard(request):
-    ecole = request.user.ecole
+    user = request.user
+    ecole = user.ecole
     if ecole is None:
         return Response({"detail": "Aucune école associée à ce compte."}, status=400)
 
@@ -38,6 +43,21 @@ def dashboard(request):
         .order_by("-date_generation")[:6]
     )
 
+    # Les chiffres financiers ne sont calculés que pour les rôles autorisés.
+    finance = None
+    if annee and (user.is_superuser or getattr(user, "role", None) in ROLES_FINANCE):
+        debut_mois = timezone.localdate().replace(day=1)
+        encaisse = (
+            Paiement.objects.filter(
+                ecole=ecole, annee_scolaire=annee, date_paiement__gte=debut_mois
+            ).aggregate(t=Sum("montant"))["t"]
+            or 0
+        )
+        finance = {
+            "encaisse_mois": int(encaisse),
+            "reste_a_recouvrer": sum(s["reste"] for s in calculer_situations(ecole, annee)),
+        }
+
     return Response({
         "annee_active": annee.nom if annee else None,
         "total_eleves": eleves.count(),
@@ -47,6 +67,7 @@ def dashboard(request):
         "garcons": sexes.get("M", 0),
         "filles": sexes.get("F", 0),
         "classes": classes,
+        "finance": finance,
         "derniers_bulletins": [
             {
                 "id": b.id,

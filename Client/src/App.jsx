@@ -15,6 +15,7 @@ import FicheAnneeScolaire from './pages/admin/FicheAnneeScolaire.jsx';
 import Utilisateurs from './pages/admin/Utilisateurs.jsx';
 import DashboardEnseignant from './pages/enseignant/DashboardEnseignant.jsx';
 import EnseignantLayout from './layouts/EnseignantLayout.jsx';
+import Finance from './pages/admin/Finance.jsx';
 
 
 const PrivateRoute = ({ children }) => {
@@ -48,6 +49,7 @@ function App() {
         <Route path="annees-scolaires" element={<AnneesScolaires />} />
         <Route path="annees-scolaires/:id" element={<FicheAnneeScolaire />} />
         <Route path="utilisateurs" element={<Utilisateurs />} />
+        <Route path="finance" element={<Finance />} />
       </Route>
 
       <Route

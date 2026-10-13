@@ -5,14 +5,21 @@ from decimal import Decimal
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from tenants.models import School, PlanAbonnement, Abonnement
+from academique.models import AnneeScolaire, Bulletin, Classe, Matiere, Niveau, Note
 from accounts.models import Utilisateur
-from academique.models import AnneeScolaire, Niveau, Matiere, Classe, Note, Bulletin
-from eleves.models import Parent, Eleve, RelationParentEleve, Inscription
+from eleves.models import Eleve, Inscription, Parent, RelationParentEleve
+from finance.models import FraisScolarite, Paiement, RemiseEleve
+from tenants.models import Abonnement, PlanAbonnement, School
 
 PRENOMS_M = ["Mamadou", "Ibrahima", "Sekou", "Alpha", "Mohamed", "Boubacar", "Ousmane", "Thierno", "Moussa", "Abdoulaye"]
 PRENOMS_F = ["Aminata", "Fatoumata", "Kadiatou", "Mariama", "Hawa", "Aissatou", "Nene", "Safiatou", "Djenab", "Rokia"]
 NOMS = ["Diallo", "Camara", "Bah", "Sylla", "Soumah", "Barry", "Conde", "Keita", "Toure", "Sow", "Traore", "Kaba"]
+
+TARIFS = {
+    "2ème année": [("Inscription", 150000), ("Scolarité", 600000)],
+    "7ème année": [("Inscription", 200000), ("Scolarité", 900000)],
+    "10ème année": [("Inscription", 250000), ("Scolarité", 1200000)],
+}
 
 
 class Command(BaseCommand):
@@ -50,6 +57,7 @@ class Command(BaseCommand):
         comptes = [
             ("demo_directeur", "Awa", "Diallo", "directeur"),
             ("demo_enseignant", "Fatma", "Camara", "enseignant"),
+            ("demo_comptable", "Mariam", "Sylla", "comptable"),
         ]
         for username, prenom, nom, role in comptes:
             if not Utilisateur.objects.filter(username=username).exists():
@@ -58,6 +66,7 @@ class Command(BaseCommand):
                     first_name=prenom, last_name=nom, role=role, ecole=ecole,
                 )
         enseignant = Utilisateur.objects.get(username="demo_enseignant")
+        comptable = Utilisateur.objects.get(username="demo_comptable")
 
         # --- Année, niveaux, matières ---
         annee, _ = AnneeScolaire.objects.get_or_create(
@@ -96,7 +105,7 @@ class Command(BaseCommand):
 
         # --- Élèves, parents, inscriptions, notes, bulletins ---
         if Eleve.objects.filter(ecole=ecole).exists():
-            self.stdout.write(self.style.WARNING("Élèves déjà présents : rien de plus à créer."))
+            self.stdout.write(self.style.WARNING("Élèves déjà présents : on passe à la suite."))
         else:
             annees_naissance = {"2ème A": 2018, "7ème A": 2013, "10ème A": 2010}
             for classe in classes:
@@ -121,13 +130,6 @@ class Command(BaseCommand):
                     )
                     Inscription.objects.create(eleve=eleve, classe=classe, annee_scolaire=annee)
 
-                    # for matiere in matieres:
-                    #     # primaire : notes entre 4 et 9,5 ; autres : entre 6 et 18
-                    #     valeur = round(rnd.uniform(4, 9.5) if bareme == 10 else rnd.uniform(6, 18), 2)
-                    #     Note.objects.create(
-                    #         ecole=ecole, eleve=eleve, matiere=matiere, classe=classe,
-                    #         annee_scolaire=annee, trimestre="t1", valeur=valeur, saisi_par=enseignant,
-                    #     )
                     for matiere in matieres:
                         # primaire : notes entre 4 et 9,5 ; autres : entre 6 et 18
                         bas, haut = (4, 9.5) if bareme == 10 else (6, 18)
@@ -143,6 +145,46 @@ class Command(BaseCommand):
                     )
                 Bulletin.recalculer_classement(classe, annee, "t1")
 
+        # --- Finance : frais, paiements, remises ---
+        if FraisScolarite.objects.filter(ecole=ecole).exists():
+            self.stdout.write(self.style.WARNING("Finance déjà présente : rien de plus à créer."))
+        else:
+            for nom_niveau, lignes in TARIFS.items():
+                for libelle, montant in lignes:
+                    FraisScolarite.objects.create(
+                        ecole=ecole, annee_scolaire=annee, niveau=niveaux[nom_niveau],
+                        libelle=libelle, montant=montant,
+                    )
+
+            inscriptions = list(
+                Inscription.objects.filter(annee_scolaire=annee, eleve__ecole=ecole)
+                .select_related("eleve", "classe__niveau")
+                .order_by("id")
+            )
+            for insc in inscriptions:
+                total = sum(m for _, m in TARIFS[insc.classe.niveau.nom])
+                tirage = rnd.random()
+                if tirage < 0.35:
+                    montants = [total * 0.6, total * 0.4]   # soldé
+                elif tirage < 0.75:
+                    montants = [total * 0.5]                # paiement partiel
+                else:
+                    montants = []                           # rien payé
+                for m in montants:
+                    Paiement.objects.create(
+                        ecole=ecole, eleve=insc.eleve, annee_scolaire=annee,
+                        montant=Decimal(int(m)),
+                        date_paiement=today - timedelta(days=rnd.randint(0, 20)),
+                        mode=rnd.choice(["especes", "orange_money", "mtn_momo", "virement"]),
+                        enregistre_par=comptable,
+                    )
+
+            for insc in rnd.sample(inscriptions, 3):
+                RemiseEleve.objects.create(
+                    ecole=ecole, eleve=insc.eleve, annee_scolaire=annee,
+                    montant=100000, motif="Fratrie",
+                )
+
         self.stdout.write(self.style.SUCCESS(
-            "Démo prête. Comptes : demo_directeur / demo_enseignant, mot de passe : Demo@2026"
+            "Démo prête. Comptes : demo_directeur / demo_enseignant / demo_comptable, mot de passe : Demo@2026"
         ))
