@@ -47,6 +47,11 @@ const CONFIG = {
   API_AFFECTATIONS: `${BASE_URL}/api/affectations/`,
   API_MES_AFFECTATIONS: `${BASE_URL}/api/mes-affectations/`,
 
+  API_SYLIUM_ECOLES: `${BASE_URL}/api/sylium/ecoles/`,
+  API_SYLIUM_ECOLE_ACTION: (id, action) => `${BASE_URL}/api/sylium/ecoles/${id}/${action}/`,
+  API_SYLIUM_PLANS: `${BASE_URL}/api/sylium/plans/`,
+  API_SYLIUM_PLAN_DETAIL: (id) => `${BASE_URL}/api/sylium/plans/${id}/`,
+
   CLOUDINARY_NAME: "kdcjs7fx",
 };
 

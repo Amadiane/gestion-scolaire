@@ -19,16 +19,22 @@ import EnseignantLayout from './layouts/EnseignantLayout.jsx';
 import DashboardEnseignant from './pages/enseignant/DashboardEnseignant.jsx';
 import MesClasses from './pages/enseignant/MesClasses.jsx';
 import NotesEnseignant from './pages/enseignant/NotesEnseignant.jsx';
+import Sylium from './pages/sylium/Sylium.jsx';
 
 const ROLES_ADMIN = ['directeur', 'secretaire', 'comptable', 'surveillant'];
 const ACCUEIL = { enseignant: '/enseignant' };
 ROLES_ADMIN.forEach((r) => { ACCUEIL[r] = '/dashboardAdmin'; });
 
 // Le contrôle réel est fait par l'API ; ceci évite d'afficher des pages vides.
-const PrivateRoute = ({ children, roles }) => {
+const PrivateRoute = ({ children, roles, superuser }) => {
   const token = localStorage.getItem('access');
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   if (!token) return <Navigate to="/login" replace />;
+
+  if (superuser) {
+    return user.is_superuser ? children : <Navigate to={ACCUEIL[user.role] || '/login'} replace />;
+  }
+  if (user.is_superuser) return <Navigate to="/sylium" replace />;
   if (roles && !roles.includes(user.role)) {
     return <Navigate to={ACCUEIL[user.role] || '/login'} replace />;
   }
@@ -39,6 +45,15 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+
+      <Route
+        path="/sylium"
+        element={
+          <PrivateRoute superuser>
+            <Sylium />
+          </PrivateRoute>
+        }
+      />
 
       <Route
         path="/dashboardAdmin"

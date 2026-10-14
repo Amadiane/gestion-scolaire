@@ -58,7 +58,7 @@ const Login = () => {
       localStorage.setItem('access', tokenData.access);
       localStorage.setItem('refresh', tokenData.refresh);
       localStorage.setItem('user', JSON.stringify(meData));
-      navigate(REDIRECTIONS_PAR_ROLE[meData.role] || '/dashboardAdmin');
+      navigate(meData.is_superuser ? '/sylium' : (REDIRECTIONS_PAR_ROLE[meData.role] || '/dashboardAdmin'));
     } catch {
       setError('Impossible de se connecter au serveur.');
     } finally {
