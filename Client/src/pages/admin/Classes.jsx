@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { School, Users } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
+import BoutonRetour from '../../components/BoutonRetour/BoutonRetour.jsx';
 import styles from '../../theme/pages/admin/Classes.module.css';
 
 const Classes = () => {
@@ -27,6 +28,8 @@ const Classes = () => {
 
   return (
     <div className={styles.wrapper}>
+      <BoutonRetour vers="/dashboardAdmin" />
+
       <h1 className={styles.title}>Classes</h1>
       <p className={styles.subtitle}>{classes.length} classe(s)</p>
 

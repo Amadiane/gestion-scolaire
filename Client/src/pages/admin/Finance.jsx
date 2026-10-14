@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Download, Wallet, Trash2, AlertTriangle } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
+import BoutonRetour from '../../components/BoutonRetour/BoutonRetour.jsx';
+import Pagination from '../../components/Pagination/Pagination.jsx';
+import usePagination from '../../hooks/usePagination.js';
 import PaiementModal from './PaiementModal.jsx';
 import { formatGNF, MODES, telechargerRecu } from '../../utils/finance.js';
 import styles from '../../theme/pages/admin/Finance.module.css';
@@ -17,7 +20,7 @@ const Finance = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [recherche, setRecherche] = useState('');
-  const [modal, setModal] = useState(null); // null | { eleve: {id, nom} | null }
+  const [modal, setModal] = useState(null);
   const [recuId, setRecuId] = useState(null);
   const [nouveauFrais, setNouveauFrais] = useState({ niveau: '', libelle: 'Scolarité', montant: '' });
   const [fraisError, setFraisError] = useState('');
@@ -76,7 +79,7 @@ const Finance = () => {
     } catch (err) {
       const data = err.response?.data;
       const premier = data && typeof data === 'object' ? Object.values(data)[0] : null;
-      setFraisError(Array.isArray(premier) ? premier[0] : 'Impossible d\'ajouter ce frais.');
+      setFraisError(Array.isArray(premier) ? premier[0] : "Impossible d'ajouter ce frais.");
     }
   };
 
@@ -94,12 +97,16 @@ const Finance = () => {
     `${p.eleve_nom} ${p.numero_recu}`.toLowerCase().includes(recherche.toLowerCase())
   );
 
+  const pagination = usePagination(paiementsFiltres, 25, recherche);
+
   const tauxRecouvrement = arrieres.total_a_payer
     ? Math.round((arrieres.total_paye / arrieres.total_a_payer) * 100)
     : 0;
 
   return (
     <div className={styles.wrapper}>
+      <BoutonRetour vers="/dashboardAdmin" />
+
       <div className={styles.headerRow}>
         <div>
           <h1 className={styles.title}>Finance</h1>
@@ -136,7 +143,7 @@ const Finance = () => {
 
           <div className={styles.tabs}>
             {[
-              ['paiements', 'Paiements'],
+              ['paiements', `Paiements (${paiements.length})`],
               ['arrieres', `Arriérés (${arrieres.nb_eleves})`],
               ['frais', 'Frais de scolarité'],
             ].map(([cle, label]) => (
@@ -159,31 +166,45 @@ const Finance = () => {
                 onChange={(e) => setRecherche(e.target.value)}
               />
               {paiementsFiltres.length === 0 ? (
-                <div className={styles.emptyState}><Wallet size={36} color="var(--color-text-dim)" /><p>Aucun paiement enregistré.</p></div>
+                <div className={styles.emptyState}><Wallet size={36} color="var(--color-text-dim)" /><p>Aucun paiement trouvé.</p></div>
               ) : (
-                <div className={styles.tableWrapper}>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr><th>Reçu</th><th>Date</th><th>Élève</th><th>Montant</th><th>Mode</th><th></th></tr>
-                    </thead>
-                    <tbody>
-                      {paiementsFiltres.slice(0, 100).map((p) => (
-                        <tr key={p.id}>
-                          <td>{p.numero_recu}</td>
-                          <td>{new Date(p.date_paiement).toLocaleDateString('fr-FR')}</td>
-                          <td className={styles.link} onClick={() => navigate(`/dashboardAdmin/eleves/${p.eleve}`)}>{p.eleve_nom}</td>
-                          <td className={styles.montant}>{formatGNF(p.montant)}</td>
-                          <td>{MODES[p.mode] || p.mode}</td>
-                          <td>
-                            <button className={styles.iconButton} onClick={() => handleRecu(p)} disabled={recuId === p.id} title="Télécharger le reçu">
-                              <Download size={15} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <>
+                  <div className={styles.tableWrapper}>
+                    <table className={`${styles.table} stack`}>
+                      <thead>
+                        <tr><th>Reçu</th><th>Date</th><th>Élève</th><th>Montant</th><th>Mode</th><th></th></tr>
+                      </thead>
+                      <tbody>
+                        {pagination.pageItems.map((p) => (
+                          <tr key={p.id}>
+                            <td data-label="Reçu">{p.numero_recu}</td>
+                            <td data-label="Date">{new Date(p.date_paiement).toLocaleDateString('fr-FR')}</td>
+                            <td
+                              data-label="Élève"
+                              className={styles.link}
+                              onClick={() => navigate(`/dashboardAdmin/eleves/${p.eleve}`)}
+                            >
+                              {p.eleve_nom}
+                            </td>
+                            <td data-label="Montant" className={styles.montant}>{formatGNF(p.montant)}</td>
+                            <td data-label="Mode">{MODES[p.mode] || p.mode}</td>
+                            <td data-label="Reçu PDF">
+                              <button
+                                className={styles.iconButton}
+                                onClick={() => handleRecu(p)}
+                                disabled={recuId === p.id}
+                                title="Télécharger le reçu"
+                              >
+                                <Download size={15} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <Pagination {...pagination} unite="paiements" />
+                </>
               )}
             </>
           )}
@@ -193,19 +214,25 @@ const Finance = () => {
               <div className={styles.emptyState}><p>Aucun arriéré : tous les élèves sont à jour, ou aucun frais n'est encore défini.</p></div>
             ) : (
               <div className={styles.tableWrapper}>
-                <table className={styles.table}>
+                <table className={`${styles.table} stack`}>
                   <thead>
                     <tr><th>Élève</th><th>Classe</th><th>À payer</th><th>Payé</th><th>Reste</th><th></th></tr>
                   </thead>
                   <tbody>
                     {arrieres.eleves.map((s) => (
                       <tr key={s.eleve_id}>
-                        <td className={styles.link} onClick={() => navigate(`/dashboardAdmin/eleves/${s.eleve_id}`)}>{s.eleve_nom}</td>
-                        <td>{s.classe_nom}</td>
-                        <td>{formatGNF(s.a_payer)}</td>
-                        <td>{formatGNF(s.paye)}</td>
-                        <td className={styles.reste}>{formatGNF(s.reste)}</td>
-                        <td>
+                        <td
+                          data-label="Élève"
+                          className={styles.link}
+                          onClick={() => navigate(`/dashboardAdmin/eleves/${s.eleve_id}`)}
+                        >
+                          {s.eleve_nom}
+                        </td>
+                        <td data-label="Classe">{s.classe_nom}</td>
+                        <td data-label="À payer">{formatGNF(s.a_payer)}</td>
+                        <td data-label="Payé">{formatGNF(s.paye)}</td>
+                        <td data-label="Reste" className={styles.reste}>{formatGNF(s.reste)}</td>
+                        <td data-label="Action">
                           <button
                             className={styles.encaisserButton}
                             onClick={() => setModal({ eleve: { id: s.eleve_id, nom: s.eleve_nom } })}
@@ -248,16 +275,18 @@ const Finance = () => {
                 <div className={styles.emptyState}><p>Définissez les frais de chaque niveau : les restes à payer en dépendent.</p></div>
               ) : (
                 <div className={styles.tableWrapper}>
-                  <table className={styles.table}>
+                  <table className={`${styles.table} stack`}>
                     <thead><tr><th>Niveau</th><th>Libellé</th><th>Montant</th><th></th></tr></thead>
                     <tbody>
                       {frais.map((f) => (
                         <tr key={f.id}>
-                          <td>{f.niveau_nom}</td>
-                          <td>{f.libelle}</td>
-                          <td className={styles.montant}>{formatGNF(f.montant)}</td>
-                          <td>
-                            <button className={styles.iconButton} onClick={() => supprimerFrais(f)} title="Supprimer"><Trash2 size={15} /></button>
+                          <td data-label="Niveau">{f.niveau_nom}</td>
+                          <td data-label="Libellé">{f.libelle}</td>
+                          <td data-label="Montant" className={styles.montant}>{formatGNF(f.montant)}</td>
+                          <td data-label="Supprimer">
+                            <button className={styles.iconButton} onClick={() => supprimerFrais(f)} title="Supprimer">
+                              <Trash2 size={15} />
+                            </button>
                           </td>
                         </tr>
                       ))}

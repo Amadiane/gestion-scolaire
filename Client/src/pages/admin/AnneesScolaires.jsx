@@ -1,9 +1,9 @@
-// src/pages/admin/AnneesScolaires.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Calendar, CheckCircle2, Trash2, X } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
+import BoutonRetour from '../../components/BoutonRetour/BoutonRetour.jsx';
 import styles from '../../theme/pages/admin/AnneesScolaires.module.css';
 
 const AnneesScolaires = () => {
@@ -63,9 +63,6 @@ const AnneesScolaires = () => {
   const handleActiver = async (annee) => {
     setActionId(annee.id);
     try {
-      // Le modèle Django désactive automatiquement les autres années
-      // de la même école dès qu'on marque celle-ci active — on envoie
-      // juste le champ, la logique est déjà posée dans AnneeScolaire.save().
       await api.patch(`${CONFIG.API_ANNEES_SCOLAIRES}${annee.id}/`, { est_active: true });
       charger();
     } catch {
@@ -92,6 +89,8 @@ const AnneesScolaires = () => {
 
   return (
     <div className={styles.wrapper}>
+      <BoutonRetour vers="/dashboardAdmin" />
+
       <div className={styles.headerRow}>
         <div>
           <h1 className={styles.title}>Années scolaires</h1>

@@ -65,13 +65,9 @@ class UtilisateurViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def reinitialiser_mot_de_passe(self, request, pk=None):
-        """
-        Génère un mot de passe temporaire. Il n'est renvoyé qu'une seule fois :
-        le directeur doit le communiquer tout de suite à la personne concernée.
-        """
         utilisateur = self.get_object()
         alphabet = string.ascii_letters + string.digits
-        nouveau_mdp = "".join(secrets.choice(alphabet) for _ in range(10))
-        utilisateur.set_password(nouveau_mdp)
+        nouveau = "".join(secrets.choice(alphabet) for _ in range(10))
+        utilisateur.set_password(nouveau)
         utilisateur.save()
-        return Response({"nouveau_mot_de_passe": nouveau_mdp})
+        return Response({"nouveau_mot_de_passe": nouveau})

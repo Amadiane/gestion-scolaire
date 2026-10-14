@@ -39,7 +39,6 @@ class AnneeScolaireViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        # Un enseignant ne reçoit pas la synthèse de toute l'école.
         classe_serializer = AnneeScolaireSerializer if est_enseignant(request.user) else AnneeScolaireDetailSerializer
         return Response(classe_serializer(instance).data)
 
@@ -59,7 +58,7 @@ class NiveauViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
     serializer_class = NiveauSerializer
 
     def queryset_enseignant(self, qs, user):
-        return qs  # lecture seule (imposée par la permission par défaut)
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(ecole=_ecole_ou_erreur(self.request, "un niveau"))
@@ -92,7 +91,7 @@ class ClasseViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
 
     @action(detail=True, methods=["get"])
     def eleves(self, request, pk=None):
-        classe = self.get_object()  # déjà restreint pour un enseignant
+        classe = self.get_object()
         ids = classe.inscriptions.filter(annee_scolaire=classe.annee_scolaire).values_list("eleve_id", flat=True)
         return Response(EleveSerializer(Eleve.objects.filter(id__in=ids), many=True).data)
 
@@ -107,21 +106,20 @@ class NoteViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
         return qs.filter(filtre_notes(user))
 
     def perform_create(self, serializer):
-        ecole = _ecole_ou_erreur(self.request, "une note")
-        serializer.save(ecole=ecole, saisi_par=self.request.user)
+        serializer.save(ecole=_ecole_ou_erreur(self.request, "une note"), saisi_par=self.request.user)
 
 
 class BulletinViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
-    queryset = Bulletin.objects.select_related("eleve", "classe")
+    queryset = Bulletin.objects.select_related("eleve", "classe__niveau")
     serializer_class = BulletinSerializer
 
     def queryset_enseignant(self, qs, user):
-        return qs.filter(classe_id__in=ids_classes(user))  # lecture seule
+        return qs.filter(classe_id__in=ids_classes(user))
 
     def perform_create(self, serializer):
         serializer.save(ecole=_ecole_ou_erreur(self.request, "un bulletin"))
 
-    @action(detail=True, methods=["post"])
+    @action(detail=True, methods=["post"], permission_classes=[IsSubscriptionActive, IsDirecteur])
     def valider(self, request, pk=None):
         bulletin = self.get_object()
         bulletin.valider(request.user)
@@ -173,7 +171,7 @@ class AffectationViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
 
 @api_view(["GET"])
 def mes_affectations(request):
-    """Classes et matières de l'enseignant connecté (alimente son espace)."""
+    """Classes et matières de l'enseignant connecté."""
     user = request.user
     if not est_enseignant(user):
         return Response({"detail": "Réservé aux enseignants."}, status=403)

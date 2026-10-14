@@ -15,3 +15,49 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Inter', system-ui, sans-serif; color: var(--color-text); }
+
+html { -webkit-text-size-adjust: 100%; }
+button { touch-action: manipulation; }
+
+/* Tableaux en cartes empilées sur téléphone.
+   Usage : <table className={`${styles.table} stack`}> + data-label sur chaque <td>. */
+@media (max-width: 640px) {
+  table.stack,
+  table.stack tbody { display: block; width: 100%; min-width: 0; }
+  table.stack thead { display: none; }
+
+  table.stack tr {
+    display: block;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--color-border);
+  }
+  table.stack tr:last-child { border-bottom: none; }
+
+  table.stack td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0 !important;
+    border: none !important;
+    text-align: right;
+  }
+
+  table.stack td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-align: left;
+  }
+}
+
+/* Sur écran tactile : pas de zoom automatique iOS et cibles plus grandes. */
+@media (max-width: 860px) {
+  input, select, textarea { font-size: 16px !important; }
+}
+
+@media (pointer: coarse) {
+  button[title], button[aria-label] { min-width: 40px; min-height: 40px; }
+}

@@ -31,7 +31,10 @@
   border: 1px solid var(--color-border);
   border-radius: 14px;
   padding: 18px;
+  min-width: 0;
 }
+
+.statCard > div:last-child { min-width: 0; }
 
 .statIcon {
   width: 42px;
@@ -44,7 +47,7 @@
   flex-shrink: 0;
 }
 
-.statValue { display: block; font-size: 24px; font-weight: 700; color: var(--color-text); }
+.statValue { display: block; font-size: 24px; font-weight: 700; color: var(--color-text); overflow-wrap: anywhere; }
 .statLabel { display: block; font-size: 12px; color: var(--color-text-muted); margin-top: 2px; }
 
 .twoCols {
@@ -68,16 +71,9 @@
 .emptyMsg { font-size: 13px; color: var(--color-text-dim); }
 
 .bars { display: flex; flex-direction: column; gap: 12px; }
-
 .barRow { display: flex; align-items: center; gap: 12px; }
 
-.barLabel {
-  width: 80px;
-  font-size: 13px;
-  color: var(--color-text);
-  font-weight: 600;
-  flex-shrink: 0;
-}
+.barLabel { width: 80px; font-size: 13px; color: var(--color-text); font-weight: 600; flex-shrink: 0; }
 
 .barTrack {
   flex: 1;
@@ -96,47 +92,20 @@
   transition: width 0.4s ease;
 }
 
-.barValue {
-  width: 28px;
-  text-align: right;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--color-text);
-}
+.barValue { width: 28px; text-align: right; font-size: 13px; font-weight: 700; color: var(--color-text); }
 
-.splitBar {
-  display: flex;
-  height: 16px;
-  border-radius: 20px;
-  overflow: hidden;
-  margin-bottom: 14px;
-}
-
+.splitBar { display: flex; height: 16px; border-radius: 20px; overflow: hidden; margin-bottom: 14px; }
 .splitBoys { background: var(--color-primary); }
 .splitGirls { background: var(--color-accent); }
 
-.legend {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--color-text-muted);
-}
-
+.legend { display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--color-text-muted); }
 .legend span { display: flex; align-items: center; gap: 8px; }
 
-.dotBoys, .dotGirls {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-
+.dotBoys, .dotGirls { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
 .dotBoys { background: var(--color-primary); }
 .dotGirls { background: var(--color-accent); }
 
 .tableWrapper { overflow-x: auto; }
-
 .table { width: 100%; border-collapse: collapse; min-width: 480px; }
 
 .table th {
@@ -168,9 +137,9 @@
 @media (max-width: 480px) {
   .wrapper { padding: 20px 16px; }
   .title { font-size: 20px; }
-  .statsGrid { grid-template-columns: 1fr 1fr; }
+  .statsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .statCard { padding: 14px; gap: 10px; }
   .statIcon { width: 36px; height: 36px; }
-  .statValue { font-size: 20px; }
+  .statValue { font-size: 17px; }
   .barLabel { width: 64px; }
 }

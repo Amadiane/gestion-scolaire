@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Plus, GraduationCap } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
+import BoutonRetour from '../../components/BoutonRetour/BoutonRetour.jsx';
+import Pagination from '../../components/Pagination/Pagination.jsx';
+import usePagination from '../../hooks/usePagination.js';
 import AjouterEleveModal from './AjouterEleveModal.jsx';
 import styles from '../../theme/pages/admin/Eleves.module.css';
 
@@ -47,8 +50,12 @@ const Eleves = () => {
     return matchTexte && matchClasse;
   });
 
+  const pagination = usePagination(elevesFiltres, 25, `${recherche}|${classeFiltre}`);
+
   return (
     <div className={styles.wrapper}>
+      <BoutonRetour vers="/dashboardAdmin" />
+
       <div className={styles.headerRow}>
         <div>
           <h1 className={styles.title}>Élèves</h1>
@@ -93,38 +100,41 @@ const Eleves = () => {
       )}
 
       {!loading && !error && elevesFiltres.length > 0 && (
-        <div className={styles.tableWrapper}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Matricule</th>
-                <th>Nom</th>
-                <th>Prénom</th>
-                <th>Classe</th>
-                <th>Statut</th>
-              </tr>
-            </thead>
-            <tbody>
-              {elevesFiltres.map((eleve) => (
-                <tr
-                  key={eleve.id}
-                  className={styles.clickableRow}
-                  onClick={() => navigate(`/dashboardAdmin/eleves/${eleve.id}`)}
-                >
-                  <td data-label="Matricule">{eleve.matricule}</td>
-                  <td data-label="Nom">{eleve.nom}</td>
-                  <td data-label="Prénom">{eleve.prenom}</td>
-                  <td data-label="Classe">{eleve.classe_actuelle_nom || '—'}</td>
-                  <td data-label="Statut">
-                    <span className={`${styles.badge} ${styles['badge_' + eleve.statut]}`}>
-                      {eleve.statut}
-                    </span>
-                  </td>
+        <>
+          <div className={styles.tableWrapper}>
+            <table className={`${styles.table} stack`}>
+              <thead>
+                <tr>
+                  <th>Matricule</th>
+                  <th>Nom</th>
+                  <th>Prénom</th>
+                  <th>Classe</th>
+                  <th>Statut</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {pagination.pageItems.map((eleve) => (
+                  <tr
+                    key={eleve.id}
+                    className={styles.clickableRow}
+                    onClick={() => navigate(`/dashboardAdmin/eleves/${eleve.id}`)}
+                  >
+                    <td data-label="Matricule">{eleve.matricule}</td>
+                    <td data-label="Nom">{eleve.nom}</td>
+                    <td data-label="Prénom">{eleve.prenom}</td>
+                    <td data-label="Classe">{eleve.classe_actuelle_nom || '—'}</td>
+                    <td data-label="Statut">
+                      <span className={`${styles.badge} ${styles['badge_' + eleve.statut]}`}>
+                        {eleve.statut}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <Pagination {...pagination} unite="élèves" />
+        </>
       )}
 
       {modalOuvert && (

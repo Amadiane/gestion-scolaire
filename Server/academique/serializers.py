@@ -124,11 +124,12 @@ class NoteSerializer(MemeEcoleMixin, serializers.ModelSerializer):
 class BulletinSerializer(MemeEcoleMixin, serializers.ModelSerializer):
     eleve_nom = serializers.SerializerMethodField()
     classe_nom = serializers.CharField(source="classe.nom", read_only=True)
+    bareme = serializers.IntegerField(source="classe.niveau.bareme_note", read_only=True)
 
     class Meta:
         model = Bulletin
         fields = [
-            "id", "ecole", "eleve", "eleve_nom", "classe", "classe_nom",
+            "id", "ecole", "eleve", "eleve_nom", "classe", "classe_nom", "bareme",
             "annee_scolaire", "trimestre", "moyenne_generale", "rang",
             "statut", "fichier_pdf", "date_generation", "valide_par",
         ]

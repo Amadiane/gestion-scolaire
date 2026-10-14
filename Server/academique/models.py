@@ -1,49 +1,32 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 
-# Create your models here.
-from django.db import models
 from tenants.models import School
 
 
 class AnneeScolaire(models.Model):
-    """Une année scolaire (ex: '2025-2026') pour une école donnée.
-    Sert de référence temporelle pour Classe, Note, Paiement, etc."""
-
-    ecole = models.ForeignKey(
-        School, on_delete=models.CASCADE, related_name="annees_scolaires"
-    )
+    ecole = models.ForeignKey(School, on_delete=models.CASCADE, related_name="annees_scolaires")
     nom = models.CharField(max_length=20, help_text="Ex: 2025-2026")
     date_debut = models.DateField()
     date_fin = models.DateField()
-    est_active = models.BooleanField(
-        default=False,
-        help_text="Une seule année active à la fois par école."
-    )
+    est_active = models.BooleanField(default=False, help_text="Une seule année active à la fois par école.")
 
     class Meta:
         verbose_name = "Année scolaire"
         verbose_name_plural = "Années scolaires"
         ordering = ["-date_debut"]
         constraints = [
-            models.UniqueConstraint(
-                fields=["ecole", "nom"], name="annee_unique_par_ecole"
-            )
+            models.UniqueConstraint(fields=["ecole", "nom"], name="annee_unique_par_ecole")
         ]
 
     def __str__(self):
         return f"{self.nom} ({self.ecole.nom})"
 
     def save(self, *args, **kwargs):
-        # Si CETTE année est marquée active, désactive automatiquement
-        # toutes les AUTRES années de la même école — garantit qu'il n'y
-        # en a jamais deux actives en même temps, sans y penser à chaque fois.
+        # Une seule année active par école, quel que soit le chemin de création.
         if self.est_active:
-            AnneeScolaire.objects.filter(
-                ecole=self.ecole, est_active=True
-            ).exclude(pk=self.pk).update(est_active=False)
+            AnneeScolaire.objects.filter(ecole=self.ecole, est_active=True).exclude(pk=self.pk).update(est_active=False)
         super().save(*args, **kwargs)
-
-
 
 
 class Niveau(models.Model):
@@ -57,7 +40,7 @@ class Niveau(models.Model):
     ordre = models.PositiveSmallIntegerField(default=0)
     cycle = models.CharField(max_length=10, choices=Cycle.choices)
     bareme_note = models.PositiveSmallIntegerField(
-        default=20, help_text="Note maximale utilisée pour ce niveau (10 ou 20 généralement)"
+        default=20, help_text="Note maximale pour ce niveau (10 ou 20 généralement)"
     )
 
     class Meta:
@@ -67,14 +50,6 @@ class Niveau(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["ecole", "nom"], name="niveau_unique_par_ecole")
         ]
-
-    def save(self, *args, **kwargs):
-        if not self.pk or self._state.adding:
-            if self.cycle == self.Cycle.PRIMAIRE and not self.bareme_note:
-                self.bareme_note = 10
-            elif self.cycle in (self.Cycle.COLLEGE, self.Cycle.LYCEE) and not self.bareme_note:
-                self.bareme_note = 20
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.nom
@@ -110,30 +85,24 @@ class Classe(models.Model):
         verbose_name_plural = "Classes"
         ordering = ["niveau__ordre", "nom"]
         constraints = [
-            models.UniqueConstraint(
-                fields=["ecole", "annee_scolaire", "nom"], name="classe_unique_par_annee"
-            )
+            models.UniqueConstraint(fields=["ecole", "annee_scolaire", "nom"], name="classe_unique_par_annee")
         ]
 
     def __str__(self):
         return f"{self.nom} — {self.annee_scolaire.nom}"
 
 
-
-from django.core.exceptions import ValidationError
-
 class Note(models.Model):
-    ecole = models.ForeignKey(School, on_delete=models.CASCADE, related_name="notes")
-    eleve = models.ForeignKey("eleves.Eleve", on_delete=models.CASCADE, related_name="notes")
-    matiere = models.ForeignKey(Matiere, on_delete=models.CASCADE, related_name="notes")
-    classe = models.ForeignKey(Classe, on_delete=models.CASCADE, related_name="notes")
-    annee_scolaire = models.ForeignKey(AnneeScolaire, on_delete=models.CASCADE, related_name="notes")
-
     class Trimestre(models.TextChoices):
         T1 = "t1", "1er trimestre"
         T2 = "t2", "2ème trimestre"
         T3 = "t3", "3ème trimestre"
 
+    ecole = models.ForeignKey(School, on_delete=models.CASCADE, related_name="notes")
+    eleve = models.ForeignKey("eleves.Eleve", on_delete=models.CASCADE, related_name="notes")
+    matiere = models.ForeignKey(Matiere, on_delete=models.CASCADE, related_name="notes")
+    classe = models.ForeignKey(Classe, on_delete=models.CASCADE, related_name="notes")
+    annee_scolaire = models.ForeignKey(AnneeScolaire, on_delete=models.CASCADE, related_name="notes")
     trimestre = models.CharField(max_length=2, choices=Trimestre.choices)
     valeur = models.DecimalField(max_digits=5, decimal_places=2)
     valeur_max = models.DecimalField(max_digits=5, decimal_places=2, editable=False)
@@ -155,7 +124,7 @@ class Note(models.Model):
             raise ValidationError(f"La note ne peut pas dépasser le barème ({self.valeur_max}).")
 
     def save(self, *args, **kwargs):
-        # Le barème n'est jamais choisi manuellement : il vient toujours du niveau de la classe.
+        # Le barème vient toujours du niveau de la classe, jamais d'une saisie.
         self.valeur_max = self.classe.niveau.bareme_note
         self.full_clean(exclude=[f.name for f in self._meta.fields if f.name != "valeur"])
         super().save(*args, **kwargs)
@@ -164,7 +133,13 @@ class Note(models.Model):
     def moyenne_ponderee(self):
         return round((self.valeur / self.valeur_max) * 20, 2)
 
+
 class Bulletin(models.Model):
+    class Statut(models.TextChoices):
+        BROUILLON = "brouillon", "Brouillon"
+        VALIDE = "valide", "Validé"
+        PUBLIE = "publie", "Publié aux parents"
+
     ecole = models.ForeignKey(School, on_delete=models.CASCADE, related_name="bulletins")
     eleve = models.ForeignKey("eleves.Eleve", on_delete=models.CASCADE, related_name="bulletins")
     classe = models.ForeignKey(Classe, on_delete=models.CASCADE, related_name="bulletins")
@@ -173,12 +148,6 @@ class Bulletin(models.Model):
 
     moyenne_generale = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, editable=False)
     rang = models.PositiveSmallIntegerField(null=True, blank=True, editable=False)
-
-    class Statut(models.TextChoices):
-        BROUILLON = "brouillon", "Brouillon"
-        VALIDE = "valide", "Validé"
-        PUBLIE = "publie", "Publié aux parents"
-
     statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.BROUILLON)
     fichier_pdf = models.URLField(blank=True, null=True, editable=False)
     date_generation = models.DateTimeField(auto_now_add=True)
@@ -198,26 +167,11 @@ class Bulletin(models.Model):
     def __str__(self):
         return f"Bulletin {self.eleve} — {self.get_trimestre_display()}"
 
-    def save(self, *args, **kwargs):
-        creation = self._state.adding
-        super().save(*args, **kwargs)
-        if creation:
-            # Dès qu'un bulletin est créé (admin OU API), on recalcule
-            # immédiatement toute la classe — plus besoin d'attendre
-            # qu'une note soit ressaisie après coup pour que ça se peuple.
-            Bulletin.recalculer_classement(self.classe, self.annee_scolaire, self.trimestre)
-            self.refresh_from_db(fields=["moyenne_generale", "rang"])
-
     def calculer_moyenne(self):
-        """
-        Moyenne pondérée par coefficient, sur le barème réel du niveau
-        (10 pour le primaire, 20 pour collège/lycée) — plus de
-        normalisation forcée à 20, puisque toutes les notes d'un même
-        bulletin partagent le même barème (celui de la classe/niveau).
-        """
+        """Moyenne pondérée sur le barème réel du niveau (10 ou 20)."""
         notes = Note.objects.filter(
             eleve=self.eleve, annee_scolaire=self.annee_scolaire, trimestre=self.trimestre
-        )
+        ).select_related("matiere")
         if not notes.exists():
             return None
         total_pondere = sum(n.valeur * n.matiere.coefficient for n in notes)
@@ -226,32 +180,33 @@ class Bulletin(models.Model):
 
     @staticmethod
     def recalculer_classement(classe, annee_scolaire, trimestre):
-        """
-        Recalcule moyenne ET rang de TOUS les bulletins d'une même classe,
-        pour un trimestre donné. Utilise .update() (pas .save()) pour ne
-        jamais redéclencher un signal post_save sur Bulletin — important
-        car cette méthode est elle-même appelée depuis un signal.
-        """
-        bulletins = Bulletin.objects.filter(
-            classe=classe, annee_scolaire=annee_scolaire, trimestre=trimestre
-        )
-        resultats = []
-        for bulletin in bulletins:
-            moyenne = bulletin.calculer_moyenne()
-            resultats.append((bulletin, moyenne))
-
+        """Recalcule moyenne et rang de toute la classe. Utilise .update()
+        pour ne jamais redéclencher un signal post_save."""
+        bulletins = Bulletin.objects.filter(classe=classe, annee_scolaire=annee_scolaire, trimestre=trimestre)
+        resultats = [(b, b.calculer_moyenne()) for b in bulletins]
         resultats.sort(key=lambda x: (x[1] is None, -(x[1] or 0)))
 
         rang_actuel = 0
-        for i, (bulletin, moyenne) in enumerate(resultats):
+        for bulletin, moyenne in resultats:
             if moyenne is not None:
                 rang_actuel += 1
                 nouveau_rang = rang_actuel
             else:
                 nouveau_rang = None
-            Bulletin.objects.filter(pk=bulletin.pk).update(
-                moyenne_generale=moyenne, rang=nouveau_rang
-            )
+            Bulletin.objects.filter(pk=bulletin.pk).update(moyenne_generale=moyenne, rang=nouveau_rang)
+
+    def save(self, *args, **kwargs):
+        creation = self._state.adding
+        super().save(*args, **kwargs)
+        if creation:
+            Bulletin.recalculer_classement(self.classe, self.annee_scolaire, self.trimestre)
+            self.refresh_from_db(fields=["moyenne_generale", "rang"])
+
+    def valider(self, utilisateur):
+        self.statut = self.Statut.VALIDE
+        self.valide_par = utilisateur
+        self.save(update_fields=["statut", "valide_par"])
+
 
 class Affectation(models.Model):
     """Un enseignant donne une matière dans une classe."""
@@ -268,9 +223,7 @@ class Affectation(models.Model):
         verbose_name_plural = "Affectations"
         ordering = ["enseignant__last_name", "classe__nom", "matiere__nom"]
         constraints = [
-            models.UniqueConstraint(
-                fields=["enseignant", "classe", "matiere"], name="affectation_unique"
-            )
+            models.UniqueConstraint(fields=["enseignant", "classe", "matiere"], name="affectation_unique")
         ]
 
     def __str__(self):

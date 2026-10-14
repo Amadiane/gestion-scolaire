@@ -1,8 +1,8 @@
-// src/pages/admin/Notes.jsx
 import { useState, useEffect } from 'react';
 import { Save, History, AlertTriangle, Search, X } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
+import BoutonRetour from '../../components/BoutonRetour/BoutonRetour.jsx';
 import styles from '../../theme/pages/admin/Notes.module.css';
 
 const TRIMESTRES = [
@@ -12,6 +12,7 @@ const TRIMESTRES = [
 ];
 
 const TRIMESTRE_LABEL = { t1: '1er trimestre', t2: '2ème trimestre', t3: '3ème trimestre' };
+const ELEVES_PAR_PAGE = 10;
 
 const Notes = () => {
   const [classes, setClasses] = useState([]);
@@ -23,6 +24,7 @@ const Notes = () => {
   const [matiereId, setMatiereId] = useState('');
   const [trimestre, setTrimestre] = useState('t1');
   const [recherche, setRecherche] = useState('');
+  const [page, setPage] = useState(1);
 
   const [eleves, setEleves] = useState([]);
   const [notesExistantes, setNotesExistantes] = useState({});
@@ -32,6 +34,7 @@ const Notes = () => {
   const [loadingListe, setLoadingListe] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [erreurSaisie, setErreurSaisie] = useState('');
 
   const [toutesLesNotes, setToutesLesNotes] = useState([]);
   const [loadingHistorique, setLoadingHistorique] = useState(true);
@@ -40,10 +43,7 @@ const Notes = () => {
     setLoadingHistorique(true);
     try {
       const res = await api.get(CONFIG.API_NOTES);
-      const trie = [...res.data].sort(
-        (a, b) => new Date(b.date_saisie) - new Date(a.date_saisie)
-      );
-      setToutesLesNotes(trie);
+      setToutesLesNotes([...res.data].sort((a, b) => new Date(b.date_saisie) - new Date(a.date_saisie)));
     } catch (err) {
       console.error('Erreur chargement historique notes :', err);
     } finally {
@@ -74,6 +74,9 @@ const Notes = () => {
     chargerHistorique();
   }, []);
 
+  // Retour à la page 1 dès qu'un filtre change.
+  useEffect(() => { setPage(1); }, [classeId, matiereId, trimestre, recherche]);
+
   useEffect(() => {
     if (!classeId || !matiereId || !trimestre || !anneeActive) {
       setEleves([]);
@@ -83,6 +86,7 @@ const Notes = () => {
     const chargerEleves = async () => {
       setLoadingListe(true);
       setMessage('');
+      setErreurSaisie('');
       try {
         const classeChoisie = classes.find((c) => c.id === Number(classeId));
         setBareme(classeChoisie?.bareme_note || 20);
@@ -94,15 +98,15 @@ const Notes = () => {
 
         setEleves(resEleves.data);
 
-        const notesFiltreesLocal = {};
+        const idsNotes = {};
         const valeursInit = {};
         resNotes.data
           .filter((n) => n.classe === Number(classeId) && n.matiere === Number(matiereId) && n.trimestre === trimestre)
           .forEach((n) => {
-            notesFiltreesLocal[n.eleve] = n.id;
+            idsNotes[n.eleve] = n.id;
             valeursInit[n.eleve] = n.valeur;
           });
-        setNotesExistantes(notesFiltreesLocal);
+        setNotesExistantes(idsNotes);
         setValeurs(valeursInit);
       } finally {
         setLoadingListe(false);
@@ -118,6 +122,7 @@ const Notes = () => {
   const handleEnregistrerTout = async () => {
     setSaving(true);
     setMessage('');
+    setErreurSaisie('');
     try {
       const appels = eleves
         .filter((e) => valeurs[e.id] !== undefined && valeurs[e.id] !== '')
@@ -138,8 +143,10 @@ const Notes = () => {
       await Promise.all(appels);
       setMessage('Notes enregistrées avec succès.');
       chargerHistorique();
-    } catch {
-      setMessage("Erreur lors de l'enregistrement d'une ou plusieurs notes.");
+    } catch (err) {
+      const data = err.response?.data;
+      const premier = data && typeof data === 'object' ? Object.values(data)[0] : null;
+      setErreurSaisie(Array.isArray(premier) ? premier[0] : "Erreur lors de l'enregistrement d'une ou plusieurs notes.");
     } finally {
       setSaving(false);
     }
@@ -151,9 +158,6 @@ const Notes = () => {
     setRecherche('');
   };
 
-  // L'historique respecte les mêmes filtres que la saisie (classe/matière
-  // si sélectionnées), le trimestre (toujours actif), plus une recherche
-  // libre sur le nom de l'élève.
   const notesFiltrees = toutesLesNotes.filter((note) => {
     const matchClasse = !classeId || note.classe === Number(classeId);
     const matchMatiere = !matiereId || note.matiere === Number(matiereId);
@@ -162,8 +166,6 @@ const Notes = () => {
     return matchClasse && matchMatiere && matchTrimestre && matchRecherche;
   });
 
-  // Regroupe les notes par élève, trié alphabétiquement — bien plus
-  // lisible qu'une simple liste chronologique mélangeant tout le monde.
   const groupesParEleve = notesFiltrees.reduce((acc, note) => {
     const cle = note.eleve_nom || `Élève #${note.eleve}`;
     if (!acc[cle]) acc[cle] = [];
@@ -173,8 +175,15 @@ const Notes = () => {
 
   const elevesTries = Object.keys(groupesParEleve).sort((a, b) => a.localeCompare(b));
 
+  const totalPages = Math.max(1, Math.ceil(elevesTries.length / ELEVES_PAR_PAGE));
+  const pageCourante = Math.min(page, totalPages);
+  const debut = (pageCourante - 1) * ELEVES_PAR_PAGE;
+  const elevesPage = elevesTries.slice(debut, debut + ELEVES_PAR_PAGE);
+
   return (
     <div className={styles.wrapper}>
+      <BoutonRetour vers="/dashboardAdmin" />
+
       <h1 className={styles.title}>Notes</h1>
       <p className={styles.subtitle}>Saisissez les notes ou consultez l'historique ci-dessous</p>
 
@@ -225,6 +234,7 @@ const Notes = () => {
       )}
 
       {message && <p className={styles.infoMsg}>{message}</p>}
+      {erreurSaisie && <p className={styles.errorMsg}>{erreurSaisie}</p>}
 
       {loadingListe && <p className={styles.stateMsg}>Chargement des élèves...</p>}
 
@@ -236,7 +246,7 @@ const Notes = () => {
         <>
           <h2 className={styles.sectionTitle}>Saisie</h2>
           <div className={styles.tableWrapper}>
-            <table className={styles.table}>
+            <table className={`${styles.table} stack`}>
               <thead>
                 <tr>
                   <th>Élève</th>
@@ -247,9 +257,9 @@ const Notes = () => {
               <tbody>
                 {eleves.map((eleve) => (
                   <tr key={eleve.id}>
-                    <td>{eleve.prenom} {eleve.nom}</td>
-                    <td>{eleve.matricule}</td>
-                    <td>
+                    <td data-label="Élève">{eleve.prenom} {eleve.nom}</td>
+                    <td data-label="Matricule">{eleve.matricule}</td>
+                    <td data-label={`Note /${bareme}`}>
                       <input
                         type="number"
                         min="0"
@@ -285,29 +295,45 @@ const Notes = () => {
         )}
 
         {!loadingHistorique && elevesTries.length > 0 && (
-          <div className={styles.groupesWrapper}>
-            {elevesTries.map((nomEleve) => (
-              <div key={nomEleve} className={styles.groupeEleve}>
-                <div className={styles.groupeHeader}>{nomEleve}</div>
-                <table className={styles.groupeTable}>
-                  <tbody>
-                    {groupesParEleve[nomEleve]
-                      .sort((a, b) => (a.matiere_nom || '').localeCompare(b.matiere_nom || ''))
-                      .map((note) => (
-                        <tr key={note.id}>
-                          <td className={styles.matiereCell}>{note.matiere_nom || `Matière #${note.matiere}`}</td>
-                          <td className={styles.trimestreCell}>{TRIMESTRE_LABEL[note.trimestre]}</td>
-                          <td className={styles.noteCell}>{note.valeur}/{note.valeur_max}</td>
-                          <td className={styles.dateCell}>
-                            {note.date_saisie ? new Date(note.date_saisie).toLocaleDateString('fr-FR') : '—'}
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
+          <>
+            <div className={styles.groupesWrapper}>
+              {elevesPage.map((nomEleve) => (
+                <div key={nomEleve} className={styles.groupeEleve}>
+                  <div className={styles.groupeHeader}>{nomEleve}</div>
+                  <table className={styles.groupeTable}>
+                    <tbody>
+                      {[...groupesParEleve[nomEleve]]
+                        .sort((a, b) => (a.matiere_nom || '').localeCompare(b.matiere_nom || ''))
+                        .map((note) => (
+                          <tr key={note.id}>
+                            <td className={styles.matiereCell}>{note.matiere_nom || `Matière #${note.matiere}`}</td>
+                            <td className={styles.trimestreCell}>{TRIMESTRE_LABEL[note.trimestre]}</td>
+                            <td className={styles.noteCell}>{note.valeur}/{note.valeur_max}</td>
+                            <td className={styles.dateCell}>
+                              {note.date_saisie ? new Date(note.date_saisie).toLocaleDateString('fr-FR') : '—'}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
+            </div>
+
+            <div className={styles.pagination}>
+              <span className={styles.paginationInfo}>
+                Élèves {debut + 1}–{Math.min(debut + ELEVES_PAR_PAGE, elevesTries.length)} sur {elevesTries.length}
+              </span>
+              <div className={styles.paginationButtons}>
+                <button onClick={() => setPage(pageCourante - 1)} disabled={pageCourante === 1}>
+                  Précédent
+                </button>
+                <button onClick={() => setPage(pageCourante + 1)} disabled={pageCourante === totalPages}>
+                  Suivant
+                </button>
               </div>
-            ))}
-          </div>
+            </div>
+          </>
         )}
       </div>
     </div>

@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Save } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
+import BoutonRetour from '../../components/BoutonRetour/BoutonRetour.jsx';
 import styles from '../../theme/pages/admin/Notes.module.css';
 
 const TRIMESTRES = [
@@ -37,6 +38,7 @@ const NotesEnseignant = () => {
     const charger = async () => {
       setLoading(true);
       setMessage('');
+      setErreur('');
       try {
         const [resEleves, resNotes] = await Promise.all([
           api.get(CONFIG.API_CLASSE_ELEVES(aff.classe_id)),
@@ -92,6 +94,8 @@ const NotesEnseignant = () => {
 
   return (
     <div className={styles.wrapper}>
+      <BoutonRetour vers="/enseignant" />
+
       <h1 className={styles.title}>Saisir des notes</h1>
       <p className={styles.subtitle}>Choisissez l'un de vos enseignements et le trimestre</p>
 
@@ -117,16 +121,16 @@ const NotesEnseignant = () => {
       {!loading && aff && eleves.length > 0 && (
         <>
           <div className={styles.tableWrapper}>
-            <table className={styles.table}>
+            <table className={`${styles.table} stack`}>
               <thead>
                 <tr><th>Élève</th><th>Matricule</th><th>Note (sur {aff.bareme_note})</th></tr>
               </thead>
               <tbody>
                 {eleves.map((e) => (
                   <tr key={e.id}>
-                    <td>{e.prenom} {e.nom}</td>
-                    <td>{e.matricule}</td>
-                    <td>
+                    <td data-label="Élève">{e.prenom} {e.nom}</td>
+                    <td data-label="Matricule">{e.matricule}</td>
+                    <td data-label={`Note /${aff.bareme_note}`}>
                       <input
                         type="number" min="0" max={aff.bareme_note} step="0.25"
                         className={styles.noteInput}

@@ -34,7 +34,6 @@ const DashboardAdmin = () => {
     { label: 'Classes', value: stats.total_classes, icon: School },
     { label: 'Parents', value: stats.total_parents, icon: UserCog },
     { label: 'Notes saisies', value: stats.total_notes, icon: BookOpen },
-    // Ces deux cartes n'existent que pour le directeur et le comptable.
     ...(stats.finance ? [
       { label: 'Encaissé ce mois (GNF)', value: formatGNF(stats.finance.encaisse_mois), icon: Wallet },
       { label: 'Reste à recouvrer (GNF)', value: formatGNF(stats.finance.reste_a_recouvrer), icon: AlertCircle },
@@ -128,7 +127,7 @@ const DashboardAdmin = () => {
               <p className={styles.emptyMsg}>Aucun bulletin pour le moment.</p>
             ) : (
               <div className={styles.tableWrapper}>
-                <table className={styles.table}>
+                <table className={`${styles.table} stack`}>
                   <thead>
                     <tr>
                       <th>Élève</th>
@@ -145,11 +144,11 @@ const DashboardAdmin = () => {
                         className={styles.clickableRow}
                         onClick={() => navigate(`/dashboardAdmin/eleves/${b.eleve_id}`)}
                       >
-                        <td>{b.eleve_nom}</td>
-                        <td>{b.classe_nom}</td>
-                        <td>{TRIMESTRE[b.trimestre]}</td>
-                        <td>{b.moyenne != null ? `${b.moyenne}/${b.bareme}` : '—'}</td>
-                        <td>{b.rang || '—'}</td>
+                        <td data-label="Élève">{b.eleve_nom}</td>
+                        <td data-label="Classe">{b.classe_nom}</td>
+                        <td data-label="Période">{TRIMESTRE[b.trimestre]}</td>
+                        <td data-label="Moyenne">{b.moyenne != null ? `${b.moyenne}/${b.bareme}` : '—'}</td>
+                        <td data-label="Rang">{b.rang || '—'}</td>
                       </tr>
                     ))}
                   </tbody>

@@ -128,3 +128,11 @@
   .addButton { width: 100%; justify-content: center; }
   .searchBar { max-width: 100%; }
 }
+
+.resetPwdButton { display: flex; align-items: center; gap: 5px; padding: 6px 10px; background: var(--color-card); border: 1px solid var(--color-border); border-radius: 6px; font-size: 12px; color: var(--color-primary); cursor: pointer; white-space: nowrap; }
+.overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 60; }
+.pwdModal { width: 100%; max-width: 380px; background: var(--color-surface); border-radius: 16px; padding: 26px; text-align: center; }
+.pwdModal h3 { font-size: 16px; color: var(--color-primary); margin-bottom: 10px; }
+.pwdWarning { font-size: 13px; color: var(--color-text-muted); margin-bottom: 16px; }
+.pwdDisplay { font-family: monospace; font-size: 20px; font-weight: 700; letter-spacing: 0.05em; padding: 14px; background: var(--color-card); border-radius: 10px; margin-bottom: 16px; color: var(--color-text); word-break: break-all; }
+.pwdCloseButton { width: 100%; padding: 12px; background: var(--color-primary); color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }

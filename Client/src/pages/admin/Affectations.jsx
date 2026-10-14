@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, ClipboardList, AlertTriangle } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
+import BoutonRetour from '../../components/BoutonRetour/BoutonRetour.jsx';
 import styles from '../../theme/pages/admin/Affectations.module.css';
 
 const Affectations = () => {
@@ -72,6 +73,8 @@ const Affectations = () => {
 
   return (
     <div className={styles.wrapper}>
+      <BoutonRetour vers="/dashboardAdmin" />
+
       <h1 className={styles.title}>Affectations</h1>
       <p className={styles.subtitle}>
         Qui enseigne quelle matière, dans quelle classe. Un enseignant ne voit et ne note que ses affectations.

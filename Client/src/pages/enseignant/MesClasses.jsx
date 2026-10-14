@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
+import BoutonRetour from '../../components/BoutonRetour/BoutonRetour.jsx';
 import styles from '../../theme/pages/enseignant/DashboardEnseignant.module.css';
 
 const MesClasses = () => {
@@ -35,6 +36,8 @@ const MesClasses = () => {
 
   return (
     <div className={styles.wrapper}>
+      <BoutonRetour vers="/enseignant" />
+
       <h1 className={styles.title}>Mes classes</h1>
       <p className={styles.subtitle}>Les classes qui vous sont affectées et leurs élèves</p>
 

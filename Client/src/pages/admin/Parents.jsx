@@ -1,9 +1,11 @@
-// src/pages/admin/Parents.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Phone, Mail, Users } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
+import BoutonRetour from '../../components/BoutonRetour/BoutonRetour.jsx';
+import Pagination from '../../components/Pagination/Pagination.jsx';
+import usePagination from '../../hooks/usePagination.js';
 import AjouterParentModal from './AjouterParentModal.jsx';
 import styles from '../../theme/pages/admin/Parents.module.css';
 
@@ -40,8 +42,12 @@ const Parents = () => {
     `${p.nom} ${p.prenom} ${p.telephone}`.toLowerCase().includes(recherche.toLowerCase())
   );
 
+  const pagination = usePagination(parentsFiltres, 24, recherche);
+
   return (
     <div className={styles.wrapper}>
+      <BoutonRetour vers="/dashboardAdmin" />
+
       <div className={styles.headerRow}>
         <div>
           <h1 className={styles.title}>Parents</h1>
@@ -73,28 +79,31 @@ const Parents = () => {
       )}
 
       {!loading && !error && parentsFiltres.length > 0 && (
-        <div className={styles.grid}>
-          {parentsFiltres.map((parent) => (
-            <div
-              key={parent.id}
-              className={styles.card}
-              onClick={() => navigate(`/dashboardAdmin/parents/${parent.id}`)}
-            >
-              <div className={styles.avatar}>{parent.prenom?.[0]}{parent.nom?.[0]}</div>
-              <div className={styles.info}>
-                <h3 className={styles.name}>{parent.prenom} {parent.nom}</h3>
-                <div className={styles.contactLine}>
-                  <Phone size={12} /> {parent.telephone}
-                </div>
-                {parent.email && (
+        <>
+          <div className={styles.grid}>
+            {pagination.pageItems.map((parent) => (
+              <div
+                key={parent.id}
+                className={styles.card}
+                onClick={() => navigate(`/dashboardAdmin/parents/${parent.id}`)}
+              >
+                <div className={styles.avatar}>{parent.prenom?.[0]}{parent.nom?.[0]}</div>
+                <div className={styles.info}>
+                  <h3 className={styles.name}>{parent.prenom} {parent.nom}</h3>
                   <div className={styles.contactLine}>
-                    <Mail size={12} /> {parent.email}
+                    <Phone size={12} /> {parent.telephone}
                   </div>
-                )}
+                  {parent.email && (
+                    <div className={styles.contactLine}>
+                      <Mail size={12} /> {parent.email}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+          <Pagination {...pagination} unite="parents" />
+        </>
       )}
 
       {modalOuvert && (
