@@ -1,91 +1,154 @@
-.wrapper {
+/* ===== Structure ===== */
+.page {
   min-height: 100vh;
   min-height: 100dvh;
-  background: var(--color-bg);
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  background: #122842;
+}
+
+/* ===== Panneau photo ===== */
+.hero {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  color: #fff;
+  background: #122842;
+}
+
+/* Cadrage en haut : les têtes ne sont jamais coupées. */
+.photo {
+  position: absolute;
+  inset: 0;
+  background: url('/images/login-hero.webp') center top / cover no-repeat, #1E3A5F;
+  transform: scale(1.02);
+}
+
+/* Dégradé sombre uniquement en bas (là où se trouve le texte) + léger fondu à droite. */
+.shade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to top, rgba(10, 28, 50, 0.96) 0%, rgba(10, 28, 50, 0.82) 20%, rgba(10, 28, 50, 0) 46%),
+    linear-gradient(to left, rgba(18, 40, 66, 0.35) 0%, transparent 18%);
+  pointer-events: none;
+}
+
+.brand {
+  position: absolute;
+  z-index: 2;
+  top: 28px;
+  left: 40px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 16px 7px 7px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.logoMark {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #2F8F5B, #1E3A5F);
+}
+
+.heroInner {
+  position: absolute;
+  z-index: 2;
+  left: 0; right: 0; bottom: 0;
+  padding: 0 72px 34px 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.heroTitle {
+  font-size: clamp(24px, 2.4vw, 34px);
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.35);
+}
+
+.heroTitle span { color: #8FE3B4; }
+
+.heroText {
+  max-width: 520px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.features { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; }
+
+.features li {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 13px; border-radius: 999px;
+  font-size: 12px; font-weight: 600;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.heroFooter {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: rgba(255, 255, 255, 0.65);
+}
+
+/* Écran peu haut : on retire le paragraphe pour ne jamais remonter sur les visages. */
+@media (max-height: 860px) { .heroText { display: none; } }
+@media (max-height: 700px) { .features { display: none; } }
+
+/* ===== Panneau formulaire : feuille qui chevauche la photo ===== */
+.panel {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  margin-left: -44px;
+  padding: 32px 32px 32px 76px;
+  border-radius: 44px 0 0 44px;
+  background:
+    radial-gradient(circle at 85% 12%, rgba(47, 143, 91, 0.12) 0%, transparent 38%),
+    radial-gradient(circle at 10% 95%, rgba(30, 58, 95, 0.1) 0%, transparent 40%),
+    var(--color-bg);
+  box-shadow: -24px 0 60px rgba(8, 20, 40, 0.35);
 }
 
-.card {
+.formWrap {
   width: 100%;
-  max-width: 420px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  padding: 40px 36px;
-  box-shadow: 0 4px 24px rgba(30, 58, 95, 0.08);
-  position: relative;
-  overflow: hidden;
+  max-width: 400px;
+  animation: monter 0.6s ease both;
 }
 
-.card::before {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 4px;
-  background: var(--color-primary);
-}
+.header { margin-bottom: 26px; }
 
-.header {
-  text-align: center;
-  margin-bottom: 32px;
-}
-
-.logoBox {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 60px;
-  height: 60px;
-  border-radius: 14px;
-  background: var(--color-primary);
-  margin-bottom: 16px;
-}
-
-.eyebrow {
-  font-size: 11px;
-  color: var(--color-text-dim);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+.title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-primary);
   margin-bottom: 6px;
 }
 
-.title {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--color-primary);
-  margin: 0 0 4px;
-}
+.subtitle { font-size: 14px; color: var(--color-text-muted); }
 
-.subtitle {
-  font-size: 13px;
-  color: var(--color-text-muted);
-  margin: 0;
-}
-
-.errorBox {
-  margin-bottom: 20px;
-  padding: 12px 14px;
-  background: var(--color-danger-bg);
-  border: 1px solid rgba(163, 32, 32, 0.3);
-  border-radius: 8px;
-  color: var(--color-danger);
-  font-size: 13px;
-}
-
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
+.form { display: flex; flex-direction: column; gap: 18px; }
 
 .label {
-  font-size: 12px;
+  display: block;
+  font-size: 13px;
   font-weight: 600;
   color: var(--color-text-muted);
-  display: block;
   margin-bottom: 8px;
 }
 
@@ -94,97 +157,170 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
+  height: 52px;
   padding: 0 14px;
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  transition: border-color 0.15s;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1.5px solid var(--color-border);
+  border-radius: 14px;
+  color: var(--color-text-dim);
+  transition: border-color 0.15s, box-shadow 0.15s, color 0.15s, background 0.15s;
 }
 
 .inputWrapper:focus-within {
+  background: #fff;
   border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px rgba(30, 58, 95, 0.12);
+  color: var(--color-primary);
 }
+
+.inputWrapper svg { flex-shrink: 0; }
 
 .inputWrapper input {
   flex: 1;
   min-width: 0;
+  height: 100%;
   background: none;
   border: none;
   outline: none;
-  color: var(--color-text);
   font-size: 16px;
-  padding: 12px 0;
-}
-
-.inputWrapper svg {
-  flex-shrink: 0;
+  font-family: inherit;
+  color: var(--color-text);
 }
 
 .toggleButton {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--color-text-dim);
   display: flex;
   align-items: center;
-  padding: 4px;
+  padding: 6px;
+  background: none;
+  border: none;
+  color: var(--color-text-dim);
+  cursor: pointer;
   flex-shrink: 0;
 }
 
+.toggleButton:hover { color: var(--color-primary); }
+
 .submitButton {
-  margin-top: 8px;
-  padding: 13px;
-  border-radius: 8px;
-  border: none;
-  background: var(--color-primary);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
+  height: 54px;
+  margin-top: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: background 0.15s, opacity 0.15s;
+  background: linear-gradient(135deg, #1E3A5F 0%, #2F8F5B 140%);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(30, 58, 95, 0.3);
+  transition: transform 0.15s, box-shadow 0.15s;
 }
+
+.submitButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(30, 58, 95, 0.36);
+}
+
+.submitButton:active:not(:disabled) { transform: translateY(0); }
 
 .submitButton:disabled {
   background: var(--color-card);
   color: var(--color-text-dim);
+  box-shadow: none;
   cursor: not-allowed;
 }
 
-/* ===== Responsive ===== */
-
-@media (max-width: 480px) {
-  .card { padding: 32px 24px; border-radius: 12px; }
-  .title { font-size: 20px; }
-  .logoBox { width: 52px; height: 52px; }
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: tourner 0.7s linear infinite;
 }
 
-@media (max-width: 360px) {
-  .wrapper { padding: 8px; }
-  .card { padding: 24px 18px; }
+.errorBox {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  background: var(--color-danger-bg);
+  border: 1px solid rgba(163, 32, 32, 0.25);
+  border-radius: 12px;
+  color: var(--color-danger);
+  font-size: 13px;
 }
 
-@media (max-height: 620px) {
-  .wrapper { align-items: flex-start; padding-top: 24px; }
-  .header { margin-bottom: 20px; }
-}
-
-.errorCode {
-  display: block;
-  margin-top: 6px;
-  font-size: 11px;
-  opacity: 0.8;
-}
+.errorCode { display: block; margin-top: 6px; font-size: 11px; opacity: 0.8; }
 
 .infoBox {
   margin-bottom: 16px;
   padding: 10px 14px;
   background: var(--color-card);
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 12px;
   color: var(--color-text-muted);
   font-size: 13px;
+}
+
+.help {
+  margin-top: 22px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.legal {
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--color-text-dim);
+  text-align: center;
+}
+
+@keyframes monter {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes tourner { to { transform: rotate(360deg); } }
+
+/* ===== Tablette et mobile : bandeau photo + feuille qui remonte ===== */
+@media (max-width: 860px) {
+  .page { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+
+  .hero { height: 250px; }
+  .photo { background-position: center top; }
+  .shade {
+    background: linear-gradient(to top, rgba(10, 28, 50, 0.55) 0%, rgba(10, 28, 50, 0) 40%);
+  }
+
+  .brand { top: 16px; left: 16px; }
+  .heroInner { display: none; }
+
+  .panel {
+    margin: -32px 0 0;
+    padding: 30px 22px 24px;
+    border-radius: 30px 30px 0 0;
+    align-items: flex-start;
+    box-shadow: 0 -14px 40px rgba(8, 20, 40, 0.28);
+  }
+
+  .title { font-size: 24px; }
+}
+
+@media (max-width: 380px) {
+  .hero { height: 215px; }
+  .panel { padding: 26px 16px 20px; }
+}
+
+/* Téléphone en paysage */
+@media (max-height: 560px) and (max-width: 860px) {
+  .hero { height: 130px; }
+  .brand { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .formWrap { animation: none; }
+  .submitButton { transition: none; }
+  .spinner { animation-duration: 1.5s; }
 }

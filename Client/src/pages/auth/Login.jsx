@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Lock, Eye, EyeOff, GraduationCap, ArrowRight } from 'lucide-react';
+import {
+  User, Lock, Eye, EyeOff, GraduationCap, ArrowRight,
+  BookOpen, Wallet, Users, ShieldCheck,
+} from 'lucide-react';
 import CONFIG from '../../config/config.js';
 import styles from '../../theme/pages/auth/Login.module.css';
 
@@ -14,7 +17,7 @@ const REDIRECTIONS_PAR_ROLE = {
   eleve: '/eleve',
 };
 
-const TIMEOUT_MS = 20000;      // au-delà, on considère la requête perdue
+const TIMEOUT_MS = 20000;
 const MAX_TENTATIVES = 3;
 
 const MESSAGES_PANNE = {
@@ -31,6 +34,12 @@ const MESSAGES_ACCES = {
   aucun_abonnement: "Aucun abonnement actif n'est associé à votre école.",
 };
 
+const FONCTIONS = [
+  { icon: BookOpen, texte: 'Notes et bulletins PDF' },
+  { icon: Wallet, texte: 'Frais, paiements et reçus' },
+  { icon: Users, texte: 'Suivi des élèves et parents' },
+];
+
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const fetchAvecTimeout = async (url, options) => {
@@ -43,8 +52,8 @@ const fetchAvecTimeout = async (url, options) => {
   }
 };
 
-// Reprend uniquement en cas de panne technique (réseau, délai, 502/503/504).
-// Une réponse 400/401/403 est définitive : jamais de nouvelle tentative.
+// Nouvelle tentative uniquement en cas de panne technique, jamais sur un
+// mauvais mot de passe.
 const requete = async (url, options, surReprise) => {
   let panne = 'reseau';
   for (let essai = 1; essai <= MAX_TENTATIVES; essai++) {
@@ -65,7 +74,6 @@ const requete = async (url, options, surReprise) => {
   throw erreur;
 };
 
-// Une réponse HTML (page d'erreur) ne doit pas faire planter la lecture.
 const lireJson = async (res) => {
   try {
     return await res.json();
@@ -129,7 +137,6 @@ const Login = () => {
         return;
       }
 
-      // Si le serveur renvoie déjà le profil, une seule requête suffit.
       let meData = tokenData.user;
       if (!meData) {
         const meRes = await requete(
@@ -152,7 +159,7 @@ const Login = () => {
     } catch (err) {
       const code = err.code || 'reseau';
       setError(MESSAGES_PANNE[code] || MESSAGES_PANNE.reseau);
-      setCodeTechnique(code);   // aide au diagnostic, sans rien révéler de sensible
+      setCodeTechnique(code);
     } finally {
       setLoading(false);
       setStatut('');
@@ -160,71 +167,112 @@ const Login = () => {
   };
 
   return (
-    <div className={styles.wrapper}>
-      <div className={styles.card}>
-        <div className={styles.header}>
-          <div className={styles.logoBox}>
-            <GraduationCap size={26} color="#fff" />
-          </div>
-          <div className={styles.eyebrow}>Sylium Intelligence Système</div>
-          <h1 className={styles.title}>Gestion Scolaire</h1>
-          <p className={styles.subtitle}>Connectez-vous à votre espace</p>
+    <div className={styles.page}>
+      <section className={styles.hero}>
+        <div
+          className={styles.photo}
+          role="img"
+          aria-label="Enseignant et élèves utilisant une tablette en classe"
+        />
+        <div className={styles.shade} />
+
+        <div className={styles.brand}>
+          <div className={styles.logoMark}><GraduationCap size={20} color="#fff" /></div>
+          <span>Sylium</span>
         </div>
 
-        {error && (
-          <div className={styles.errorBox} role="alert">
-            {error}
-            {codeTechnique && <span className={styles.errorCode}>Code : {codeTechnique}</span>}
+        <div className={styles.heroInner}>
+          <h2 className={styles.heroTitle}>
+            Toute votre école, <span>au même endroit.</span>
+          </h2>
+          <p className={styles.heroText}>
+            Élèves, notes, bulletins, paiements : une plateforme simple pour la direction,
+            les enseignants et les parents.
+          </p>
+          <ul className={styles.features}>
+            {FONCTIONS.map(({ icon: Icon, texte }) => (
+              <li key={texte}><Icon size={15} /> {texte}</li>
+            ))}
+          </ul>
+          <div className={styles.heroFooter}>
+            <ShieldCheck size={15} /> Données hébergées de façon sécurisée
           </div>
-        )}
+        </div>
+      </section>
 
-        {statut && <div className={styles.infoBox} role="status">{statut}</div>}
+      <main className={styles.panel}>
+        <div className={styles.formWrap}>
+          <div className={styles.header}>
+            <h1 className={styles.title}>Bon retour 👋</h1>
+            <p className={styles.subtitle}>Connectez-vous à votre espace</p>
+          </div>
 
-        <form onSubmit={handleLogin} className={styles.form}>
-          <div>
-            <label className={styles.label}>Nom d'utilisateur</label>
-            <div className={styles.inputWrapper}>
-              <User size={16} color="var(--color-text-dim)" />
-              <input
-                type="text"
-                placeholder="Votre identifiant"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-              />
+          {error && (
+            <div className={styles.errorBox} role="alert">
+              {error}
+              {codeTechnique && <span className={styles.errorCode}>Code : {codeTechnique}</span>}
             </div>
-          </div>
+          )}
 
-          <div>
-            <label className={styles.label}>Mot de passe</label>
-            <div className={styles.inputWrapper}>
-              <Lock size={16} color="var(--color-text-dim)" />
-              <input
-                type={passwordVisible ? 'text' : 'password'}
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-              />
-              <button
-                type="button"
-                className={styles.toggleButton}
-                onClick={() => setPasswordVisible(!passwordVisible)}
-                aria-label={passwordVisible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
-              >
-                {passwordVisible ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
+          {statut && <div className={styles.infoBox} role="status">{statut}</div>}
+
+          <form onSubmit={handleLogin} className={styles.form}>
+            <div>
+              <label className={styles.label} htmlFor="username">Nom d'utilisateur</label>
+              <div className={styles.inputWrapper}>
+                <User size={17} />
+                <input
+                  id="username"
+                  type="text"
+                  placeholder="Votre identifiant"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                />
+              </div>
             </div>
-          </div>
 
-          <button type="submit" disabled={loading || !username || !password} className={styles.submitButton}>
-            {loading ? 'Connexion...' : <>Se connecter <ArrowRight size={16} /></>}
-          </button>
-        </form>
-      </div>
+            <div>
+              <label className={styles.label} htmlFor="password">Mot de passe</label>
+              <div className={styles.inputWrapper}>
+                <Lock size={17} />
+                <input
+                  id="password"
+                  type={passwordVisible ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  className={styles.toggleButton}
+                  onClick={() => setPasswordVisible(!passwordVisible)}
+                  aria-label={passwordVisible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                >
+                  {passwordVisible ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" disabled={loading || !username || !password} className={styles.submitButton}>
+              {loading ? (
+                <><span className={styles.spinner} /> Connexion...</>
+              ) : (
+                <>Se connecter <ArrowRight size={17} /></>
+              )}
+            </button>
+          </form>
+
+          <p className={styles.help}>
+            Mot de passe oublié ? Contactez la direction de votre établissement.
+          </p>
+          <p className={styles.legal}>© Sylium Intelligence Système</p>
+        </div>
+      </main>
     </div>
   );
 };
