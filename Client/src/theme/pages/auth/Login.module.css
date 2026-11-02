@@ -171,3 +171,20 @@
   .wrapper { align-items: flex-start; padding-top: 24px; }
   .header { margin-bottom: 20px; }
 }
+
+.errorCode {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.infoBox {
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}

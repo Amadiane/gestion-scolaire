@@ -99,6 +99,7 @@ REST_FRAMEWORK = {
         "tenants.permissions.IsStaffUser",
         "tenants.permissions.EnseignantLectureSeule",
     ),
+    "DEFAULT_THROTTLE_RATES": {"login": "20/min"},
 }
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
