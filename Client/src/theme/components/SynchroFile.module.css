@@ -1,0 +1,53 @@
+.zone {
+  position: fixed;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 9998;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: calc(100vw - 32px);
+}
+.pastille {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  padding: 9px 15px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+.attente { background: #1e3a5f; }
+.alerte { background: #b91c1c; }
+.ok { background: #2f8f5b; cursor: default; }
+.tourne { animation: tourner 1s linear infinite; }
+@keyframes tourner { to { transform: rotate(360deg); } }
+.panneau {
+  width: 300px;
+  max-width: 100%;
+  background: #fff;
+  color: #1f2937;
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.3);
+  font-size: 13px;
+}
+.entete { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.fermer { border: 0; background: transparent; cursor: pointer; color: #6b7280; }
+.texte { margin: 4px 0 10px; color: #4b5563; line-height: 1.4; }
+.probleme {
+  display: flex; gap: 8px; justify-content: space-between; align-items: center;
+  padding: 8px 10px; margin-bottom: 8px; border-radius: 8px;
+  background: #fef2f2; color: #991b1b;
+}
+.probleme button { border: 0; background: transparent; color: #991b1b; font-weight: 700; cursor: pointer; }
+.bouton {
+  width: 100%; border: 0; border-radius: 10px; padding: 10px;
+  background: #2f8f5b; color: #fff; font-weight: 700; cursor: pointer;
+}
+.bouton:disabled { opacity: 0.6; cursor: default; }

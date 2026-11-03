@@ -1,6 +1,7 @@
 import axios from 'axios';
 import CONFIG from '../config/config.js';
 import { marquerEnLigne } from '../offline/session.js';
+import { estMemorisable, memoriser, relire } from '../offline/cache.js';
 
 const api = axios.create({ baseURL: CONFIG.BASE_URL });
 
@@ -13,10 +14,27 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => {
     marquerEnLigne();
+    if (estMemorisable(response.config)) memoriser(response.config, response.data);
     return response;
   },
   async (error) => {
     const originalRequest = error.config;
+
+    // Pas de réponse du serveur (réseau coupé, timeout) : on sert la copie locale si elle existe.
+    if (!error.response && originalRequest && estMemorisable(originalRequest)) {
+      const local = await relire(originalRequest);
+      if (local?.manqueCle) {
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
+      if (local) {
+        window.dispatchEvent(new CustomEvent('sylium:donnees-locales', { detail: { le: local.le } }));
+        return {
+          data: local.data, status: 200, statusText: 'OK', headers: {},
+          config: originalRequest, request: {}, fromCache: true,
+        };
+      }
+    }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
@@ -27,7 +45,6 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${res.data.access}`;
         return api(originalRequest);
       } catch (e) {
-        // Réseau absent : on ne déconnecte pas, la session hors ligne reste valable.
         if (!e.response) return Promise.reject(error);
         localStorage.removeItem('access');
         localStorage.removeItem('refresh');

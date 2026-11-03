@@ -4,6 +4,7 @@ import { Save } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
 import BoutonRetour from '../../components/BoutonRetour/BoutonRetour.jsx';
+import { ajouterOperation, operationsEnAttente, synchroniser } from '../../offline/file.js';
 import styles from '../../theme/pages/admin/Notes.module.css';
 
 const TRIMESTRES = [
@@ -20,6 +21,7 @@ const NotesEnseignant = () => {
   const [eleves, setEleves] = useState([]);
   const [valeurs, setValeurs] = useState({});
   const [existantes, setExistantes] = useState({});
+  const [nbAttente, setNbAttente] = useState(0);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -50,8 +52,16 @@ const NotesEnseignant = () => {
         resNotes.data
           .filter((n) => n.classe === aff.classe_id && n.matiere === aff.matiere_id && n.trimestre === trimestre)
           .forEach((n) => { ids[n.eleve] = n.id; vals[n.eleve] = n.valeur; });
+
+        // Notes saisies sur cet appareil et pas encore envoyées : elles priment à l'affichage.
+        const enAttente = (await operationsEnAttente('note')).filter(
+          (o) => o.classe === aff.classe_id && o.matiere === aff.matiere_id && o.trimestre === trimestre
+        );
+        enAttente.forEach((o) => { vals[o.eleve] = o.valeur; });
+
         setExistantes(ids);
         setValeurs(vals);
+        setNbAttente(enAttente.length);
       } catch {
         setErreur('Impossible de charger les élèves.');
       } finally {
@@ -61,32 +71,77 @@ const NotesEnseignant = () => {
     charger();
   }, [aff, trimestre]);
 
+  // Range les notes dans la file d'attente de l'appareil (envoi automatique plus tard).
+  const placerEnFile = async (lignes) => {
+    try {
+      for (const l of lignes) {
+        await ajouterOperation({
+          type: 'note',
+          cleNat: `note|${l.eleve}|${l.matiere}|${l.classe}|${l.annee_scolaire}|${l.trimestre}`,
+          charge: l,
+        });
+      }
+      setNbAttente(lignes.length);
+      setMessage(
+        `${lignes.length} note(s) enregistrée(s) sur cet appareil. ` +
+        'Elles seront envoyées automatiquement dès le retour du réseau.'
+      );
+      return true;
+    } catch {
+      setErreur("Impossible d'enregistrer sur cet appareil. Reconnectez-vous avec internet puis réessayez.");
+      return false;
+    }
+  };
+
   const enregistrer = async () => {
-    setSaving(true);
     setMessage('');
     setErreur('');
+
+    const lignes = eleves
+      .filter((e) => valeurs[e.id] !== undefined && valeurs[e.id] !== '')
+      .map((e) => ({
+        eleve: e.id,
+        matiere: aff.matiere_id,
+        classe: aff.classe_id,
+        annee_scolaire: aff.annee_scolaire,
+        trimestre,
+        valeur: String(valeurs[e.id]),
+      }));
+
+    if (lignes.length === 0) {
+      setErreur('Saisissez au moins une note.');
+      return;
+    }
+
+    setSaving(true);
+
+    // Pas de réseau : on enregistre directement sur l'appareil.
+    if (!navigator.onLine) {
+      await placerEnFile(lignes);
+      setSaving(false);
+      return;
+    }
+
     try {
-      const appels = eleves
-        .filter((e) => valeurs[e.id] !== undefined && valeurs[e.id] !== '')
-        .map((e) => {
-          const payload = {
-            eleve: e.id,
-            matiere: aff.matiere_id,
-            classe: aff.classe_id,
-            annee_scolaire: aff.annee_scolaire,
-            trimestre,
-            valeur: valeurs[e.id],
-          };
-          return existantes[e.id]
-            ? api.patch(`${CONFIG.API_NOTES}${existantes[e.id]}/`, payload)
-            : api.post(CONFIG.API_NOTES, payload);
-        });
-      await Promise.all(appels);
+      await Promise.all(
+        lignes.map((payload) =>
+          existantes[payload.eleve]
+            ? api.patch(`${CONFIG.API_NOTES}${existantes[payload.eleve]}/`, payload)
+            : api.post(CONFIG.API_NOTES, payload)
+        )
+      );
+      setNbAttente(0);
       setMessage('Notes enregistrées avec succès.');
+      synchroniser();
     } catch (err) {
-      const data = err.response?.data;
-      const premier = data && typeof data === 'object' ? Object.values(data)[0] : null;
-      setErreur(Array.isArray(premier) ? premier[0] : "Erreur lors de l'enregistrement d'une ou plusieurs notes.");
+      if (!err.response) {
+        // Le réseau a lâché en cours de route : rien n'est perdu, on garde tout sur l'appareil.
+        await placerEnFile(lignes);
+      } else {
+        const data = err.response.data;
+        const premier = data && typeof data === 'object' ? Object.values(data)[0] : null;
+        setErreur(Array.isArray(premier) ? premier[0] : "Erreur lors de l'enregistrement d'une ou plusieurs notes.");
+      }
     } finally {
       setSaving(false);
     }
@@ -113,6 +168,9 @@ const NotesEnseignant = () => {
 
       {affectations.length === 0 && !erreur && (
         <p className={styles.stateMsg}>Aucune classe ne vous est affectée : contactez la direction.</p>
+      )}
+      {nbAttente > 0 && !message && (
+        <p className={styles.infoMsg}>{nbAttente} note(s) de cet écran sont en attente d'envoi.</p>
       )}
       {message && <p className={styles.infoMsg}>{message}</p>}
       {erreur && <p className={styles.errorMsg}>{erreur}</p>}

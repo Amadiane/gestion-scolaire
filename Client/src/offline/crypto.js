@@ -4,8 +4,6 @@
 const enc = new TextEncoder();
 const dec = new TextDecoder();
 
-// Plus il y a d'itérations, plus c'est difficile à casser, mais plus c'est lent
-// sur les vieux téléphones. 300 000 est un bon compromis.
 export const ITERATIONS = 300000;
 
 export const versB64 = (buf) => {
@@ -21,13 +19,15 @@ export const depuisB64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0))
 
 export const nouveauSel = () => crypto.getRandomValues(new Uint8Array(16));
 
-// Comparaison sans arrêt anticipé.
 export const egal = (a, b) => {
   if (a.length !== b.length) return false;
   let diff = 0;
   for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return diff === 0;
 };
+
+export const importerCle = (brutB64) =>
+  crypto.subtle.importKey('raw', depuisB64(brutB64), 'AES-GCM', false, ['encrypt', 'decrypt']);
 
 // Du mot de passe, on tire : une clé AES (chiffrer les données) et un
 // vérificateur (savoir si le mot de passe saisi est le bon).
@@ -38,10 +38,11 @@ export async function deriver(motDePasse, sel, iterations = ITERATIONS) {
     base,
     256
   );
-  const cle = await crypto.subtle.importKey('raw', bits, 'AES-GCM', false, ['encrypt', 'decrypt']);
+  const brut = versB64(bits);
+  const cle = await importerCle(brut);
   const marque = new Uint8Array([...enc.encode('verif:'), ...new Uint8Array(bits)]);
   const verifieur = versB64(await crypto.subtle.digest('SHA-256', marque));
-  return { cle, verifieur };
+  return { cle, verifieur, brut };
 }
 
 export async function chiffrer(cle, objet) {

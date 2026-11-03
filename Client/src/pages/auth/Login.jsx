@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   User, Lock, Eye, EyeOff, GraduationCap, ArrowRight,
@@ -7,9 +7,10 @@ import {
 import CONFIG from '../../config/config.js';
 import styles from '../../theme/pages/auth/Login.module.css';
 import {
-  JETON_HORS_LIGNE, compteExiste, connexionHorsLigne, enregistrerCompte,
+  JETON_HORS_LIGNE, compteExiste, connexionHorsLigne, enregistrerCompte, effacerCle,
   DUREE_MAX_HORS_LIGNE_JOURS,
 } from '../../offline/session.js';
+import { prechargerDonnees } from '../../offline/precharge.js';
 
 const REDIRECTIONS_PAR_ROLE = {
   directeur: '/dashboardAdmin',
@@ -110,6 +111,10 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
 
+  // Arriver sur le login efface la clé de chiffrement de la session précédente :
+  // c'est ce qui sécurise la déconnexion.
+  useEffect(() => { effacerCle(); }, []);
+
   const ouvrirSession = (user, access, refresh, identifiant) => {
     localStorage.setItem('access', access);
     localStorage.setItem('refresh', refresh);
@@ -164,7 +169,7 @@ const Login = () => {
         // Panne technique : si cet appareil connaît déjà le compte, on bascule en hors ligne.
         const code = err.code || 'reseau';
         if (await compteExiste(identifiant)) {
-          if (await tenterHorsLigne(identifiant)) return;
+          await tenterHorsLigne(identifiant);
           return;
         }
         setError(MESSAGES_PANNE[code] || MESSAGES_PANNE.reseau);
@@ -214,8 +219,10 @@ const Login = () => {
         }
       }
 
-      // Enregistrement local en arrière-plan (ne bloque jamais la connexion).
+      // Enregistrement local puis préchargement, en arrière-plan
+      // (ne bloque jamais la connexion).
       enregistrerCompte({ username: identifiant, password, user: meData, refresh: tokenData.refresh })
+        .then((ok) => ok && prechargerDonnees())
         .catch(() => {});
 
       ouvrirSession(meData, tokenData.access, tokenData.refresh, identifiant);

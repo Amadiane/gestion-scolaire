@@ -10,6 +10,11 @@ from eleves.serializers import EleveSerializer
 from tenants.mixins import TenantScopedQuerysetMixin
 from tenants.permissions import IsDirecteur, IsStaffUser, IsSubscriptionActive
 
+from decimal import Decimal
+from django.db import transaction
+from django.core.exceptions import ValidationError as DjangoValidationError
+from rest_framework.exceptions import ValidationError as DRFValidationError
+
 from .models import AnneeScolaire, Niveau, Matiere, Classe, Note, Bulletin, Affectation
 from .pdf import generer_pdf_bulletin
 from .scoping import affectations_de, est_enseignant, filtre_notes, ids_classes
@@ -96,17 +101,81 @@ class ClasseViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
         return Response(EleveSerializer(Eleve.objects.filter(id__in=ids), many=True).data)
 
 
+def _premier_message(erreurs):
+    premier = next(iter(erreurs.values()), "Données invalides.")
+    if isinstance(premier, (list, tuple)) and premier:
+        premier = premier[0]
+    return str(premier)
+
+
 class NoteViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
     queryset = Note.objects.select_related("eleve", "matiere")
     serializer_class = NoteSerializer
     # Les enseignants peuvent écrire ici : le serializer vérifie leurs affectations.
     permission_classes = [IsSubscriptionActive, IsStaffUser]
 
+    CHAMPS_SYNC = ("eleve", "matiere", "classe", "annee_scolaire", "trimestre", "valeur")
+
     def queryset_enseignant(self, qs, user):
         return qs.filter(filtre_notes(user))
 
     def perform_create(self, serializer):
         serializer.save(ecole=_ecole_ou_erreur(self.request, "une note"), saisi_par=self.request.user)
+
+    def _synchroniser_une(self, request, ecole, op):
+        """Crée ou met à jour une note. Idempotent : rejouer la même opération ne change rien."""
+        donnees = {k: op.get(k) for k in self.CHAMPS_SYNC}
+        existante = (
+            self.get_queryset()
+            .filter(
+                eleve_id=donnees["eleve"], matiere_id=donnees["matiere"], classe_id=donnees["classe"],
+                annee_scolaire_id=donnees["annee_scolaire"], trimestre=donnees["trimestre"],
+            )
+            .order_by("-date_saisie")
+            .first()
+        )
+        serializer = self.get_serializer(existante, data=donnees, partial=existante is not None)
+        if not serializer.is_valid():
+            return {"statut": "erreur", "detail": _premier_message(serializer.errors)}
+
+        if existante is None:
+            note = serializer.save(ecole=ecole, saisi_par=request.user)
+            return {"statut": "cree", "id": note.id}
+
+        ancienne = existante.valeur
+        if Decimal(str(ancienne)) == serializer.validated_data["valeur"]:
+            return {"statut": "identique", "id": existante.id}
+        note = serializer.save()
+        return {
+            "statut": "modifie", "id": note.id,
+            "ancienne_valeur": str(ancienne), "valeur": str(note.valeur),
+        }
+
+    @action(detail=False, methods=["post"], url_path="synchroniser")
+    def synchroniser(self, request):
+        operations = request.data.get("operations")
+        if not isinstance(operations, list) or len(operations) > 500:
+            return Response({"detail": "Liste 'operations' requise (500 maximum)."}, status=400)
+        try:
+            ecole = _ecole_ou_erreur(request, "une note")
+        except DRFValidationError as e:
+            return Response({"detail": str(e.detail)}, status=400)
+
+        resultats = []
+        for op in operations:
+            client_id = op.get("client_id") if isinstance(op, dict) else None
+            try:
+                with transaction.atomic():
+                    resultat = self._synchroniser_une(request, ecole, op)
+            except DjangoValidationError as e:
+                resultat = {"statut": "erreur", "detail": e.messages[0] if e.messages else "Données invalides."}
+            except DRFValidationError as e:
+                resultat = {"statut": "erreur", "detail": str(e.detail)}
+            except (ValueError, TypeError, KeyError, AttributeError):
+                resultat = {"statut": "erreur", "detail": "Opération mal formée."}
+            resultat["client_id"] = client_id
+            resultats.append(resultat)
+        return Response({"resultats": resultats})
 
 
 class BulletinViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
