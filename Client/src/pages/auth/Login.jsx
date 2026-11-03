@@ -6,6 +6,10 @@ import {
 } from 'lucide-react';
 import CONFIG from '../../config/config.js';
 import styles from '../../theme/pages/auth/Login.module.css';
+import {
+  JETON_HORS_LIGNE, compteExiste, connexionHorsLigne, enregistrerCompte,
+  DUREE_MAX_HORS_LIGNE_JOURS,
+} from '../../offline/session.js';
 
 const REDIRECTIONS_PAR_ROLE = {
   directeur: '/dashboardAdmin',
@@ -24,7 +28,6 @@ const MESSAGES_PANNE = {
   timeout: 'Le serveur met trop de temps à répondre. Vérifiez votre connexion puis réessayez.',
   reseau: 'Connexion impossible. Vérifiez votre accès internet puis réessayez.',
   serveur: 'Le service est momentanément indisponible. Réessayez dans une minute.',
-  hors_ligne: "Vous n'êtes pas connecté à internet.",
 };
 
 const MESSAGES_ACCES = {
@@ -32,6 +35,21 @@ const MESSAGES_ACCES = {
   suspendu: "L'accès de votre école a été suspendu.",
   compte_desactive: 'Votre compte a été désactivé.',
   aucun_abonnement: "Aucun abonnement actif n'est associé à votre école.",
+};
+
+const messageHorsLigne = (r) => {
+  switch (r.raison) {
+    case 'inconnu':
+      return "Première connexion sur cet appareil : connectez-vous une fois avec internet pour activer le mode hors ligne.";
+    case 'mot_de_passe':
+      return "Nom d'utilisateur ou mot de passe incorrect.";
+    case 'expire':
+      return `Vous êtes resté plus de ${DUREE_MAX_HORS_LIGNE_JOURS} jours sans connexion. Reconnectez-vous avec internet.`;
+    case 'verrouille':
+      return `Trop d'essais. Réessayez dans ${r.minutes} minute(s).`;
+    default:
+      return "Le mode hors ligne n'est pas disponible sur ce navigateur.";
+  }
 };
 
 const FONCTIONS = [
@@ -92,31 +110,68 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
 
+  const ouvrirSession = (user, access, refresh, identifiant) => {
+    localStorage.setItem('access', access);
+    localStorage.setItem('refresh', refresh);
+    localStorage.setItem('user', JSON.stringify(user));
+    localStorage.setItem('compte_local', identifiant);
+    navigate(user.is_superuser ? '/sylium' : (REDIRECTIONS_PAR_ROLE[user.role] || '/dashboardAdmin'));
+  };
+
+  // Connexion avec les données enregistrées sur l'appareil.
+  const tenterHorsLigne = async (identifiant) => {
+    setStatut('Vérification sur cet appareil...');
+    const r = await connexionHorsLigne(identifiant, password);
+    if (r.ok) {
+      ouvrirSession(r.user, JETON_HORS_LIGNE, r.refresh, identifiant);
+      return true;
+    }
+    setError(messageHorsLigne(r));
+    return false;
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     if (loading) return;
 
+    const identifiant = username.trim();
     setError('');
     setCodeTechnique('');
-    if (!navigator.onLine) {
-      setError(MESSAGES_PANNE.hors_ligne);
-      return;
-    }
-
     setLoading(true);
     setStatut('');
-    const surReprise = (n) => setStatut(`Connexion lente, nouvelle tentative (${n}/${MAX_TENTATIVES})...`);
 
     try {
-      const tokenRes = await requete(
-        CONFIG.API_LOGIN,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password }),
-        },
-        surReprise
-      );
+      // Sans réseau : on tente directement la connexion locale.
+      if (!navigator.onLine) {
+        await tenterHorsLigne(identifiant);
+        return;
+      }
+
+      const surReprise = (n) => setStatut(`Connexion lente, nouvelle tentative (${n}/${MAX_TENTATIVES})...`);
+
+      let tokenRes;
+      try {
+        tokenRes = await requete(
+          CONFIG.API_LOGIN,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: identifiant, password }),
+          },
+          surReprise
+        );
+      } catch (err) {
+        // Panne technique : si cet appareil connaît déjà le compte, on bascule en hors ligne.
+        const code = err.code || 'reseau';
+        if (await compteExiste(identifiant)) {
+          if (await tenterHorsLigne(identifiant)) return;
+          return;
+        }
+        setError(MESSAGES_PANNE[code] || MESSAGES_PANNE.reseau);
+        setCodeTechnique(code);
+        return;
+      }
+
       const tokenData = await lireJson(tokenRes);
 
       if (tokenRes.status === 429) {
@@ -139,27 +194,31 @@ const Login = () => {
 
       let meData = tokenData.user;
       if (!meData) {
-        const meRes = await requete(
-          CONFIG.API_UTILISATEUR_MOI,
-          { headers: { Authorization: `Bearer ${tokenData.access}` } },
-          surReprise
-        );
-        meData = await lireJson(meRes);
-        if (!meRes.ok) {
-          setError(MESSAGES_ACCES[meData.raison] || 'Accès actuellement indisponible.');
-          if (!meData.raison) setCodeTechnique(`http ${meRes.status}`);
+        try {
+          const meRes = await requete(
+            CONFIG.API_UTILISATEUR_MOI,
+            { headers: { Authorization: `Bearer ${tokenData.access}` } },
+            surReprise
+          );
+          meData = await lireJson(meRes);
+          if (!meRes.ok) {
+            setError(MESSAGES_ACCES[meData.raison] || 'Accès actuellement indisponible.');
+            if (!meData.raison) setCodeTechnique(`http ${meRes.status}`);
+            return;
+          }
+        } catch (err) {
+          const code = err.code || 'reseau';
+          setError(MESSAGES_PANNE[code] || MESSAGES_PANNE.reseau);
+          setCodeTechnique(code);
           return;
         }
       }
 
-      localStorage.setItem('access', tokenData.access);
-      localStorage.setItem('refresh', tokenData.refresh);
-      localStorage.setItem('user', JSON.stringify(meData));
-      navigate(meData.is_superuser ? '/sylium' : (REDIRECTIONS_PAR_ROLE[meData.role] || '/dashboardAdmin'));
-    } catch (err) {
-      const code = err.code || 'reseau';
-      setError(MESSAGES_PANNE[code] || MESSAGES_PANNE.reseau);
-      setCodeTechnique(code);
+      // Enregistrement local en arrière-plan (ne bloque jamais la connexion).
+      enregistrerCompte({ username: identifiant, password, user: meData, refresh: tokenData.refresh })
+        .catch(() => {});
+
+      ouvrirSession(meData, tokenData.access, tokenData.refresh, identifiant);
     } finally {
       setLoading(false);
       setStatut('');
