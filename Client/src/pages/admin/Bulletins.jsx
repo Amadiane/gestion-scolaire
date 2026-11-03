@@ -1,14 +1,39 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Download, CheckCircle, Search } from 'lucide-react';
+import { FileText, Download, CheckCircle, Search, ChevronUp, ChevronDown, X } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
 import BoutonRetour from '../../components/BoutonRetour/BoutonRetour.jsx';
 import Pagination from '../../components/Pagination/Pagination.jsx';
 import usePagination from '../../hooks/usePagination.js';
 import styles from '../../theme/pages/admin/Bulletins.module.css';
+import listes from '../../theme/pages/admin/Listes.module.css';
 
 const TRIMESTRE_LABEL = { t1: '1er trimestre', t2: '2ème trimestre', t3: '3ème trimestre' };
+
+const norm = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const comparer = (a, b) =>
+  String(a || '').localeCompare(String(b || ''), 'fr', { numeric: true, sensitivity: 'base' });
+const rangNum = (r) => (r == null || r === '' ? 9999 : Number(r));
+const majuscule = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+
+const SENS_DEFAUT = { moyenne: 'desc' };
+
+const comparateurs = {
+  eleve: (a, b) => comparer(a.eleve_nom, b.eleve_nom),
+  classe: (a, b) =>
+    comparer(a.classe_nom, b.classe_nom) ||
+    comparer(a.trimestre, b.trimestre) ||
+    rangNum(a.rang) - rangNum(b.rang) ||
+    comparer(a.eleve_matricule, b.eleve_matricule),
+  periode: (a, b) =>
+    comparer(a.trimestre, b.trimestre) ||
+    comparer(a.classe_nom, b.classe_nom) ||
+    rangNum(a.rang) - rangNum(b.rang),
+  moyenne: (a, b) => Number(a.moyenne_generale ?? -1) - Number(b.moyenne_generale ?? -1),
+  rang: (a, b) => rangNum(a.rang) - rangNum(b.rang) || comparer(a.classe_nom, b.classe_nom),
+  statut: (a, b) => comparer(a.statut, b.statut) || comparer(a.classe_nom, b.classe_nom),
+};
 
 const Bulletins = () => {
   const navigate = useNavigate();
@@ -17,6 +42,9 @@ const Bulletins = () => {
   const [actionId, setActionId] = useState(null);
   const [recherche, setRecherche] = useState('');
   const [periode, setPeriode] = useState('');
+  const [classeFiltre, setClasseFiltre] = useState('');
+  const [statutFiltre, setStatutFiltre] = useState('');
+  const [tri, setTri] = useState({ cle: 'classe', sens: 'asc' });
 
   const charger = async () => {
     setLoading(true);
@@ -69,36 +97,111 @@ const Bulletins = () => {
     }
   };
 
-  const bulletinsFiltres = bulletins.filter((b) => {
-    const matchTexte = `${b.eleve_nom} ${b.classe_nom}`.toLowerCase().includes(recherche.toLowerCase());
-    const matchPeriode = !periode || b.trimestre === periode;
-    return matchTexte && matchPeriode;
-  });
+  const basculerTri = (cle) =>
+    setTri((t) =>
+      t.cle === cle
+        ? { cle, sens: t.sens === 'asc' ? 'desc' : 'asc' }
+        : { cle, sens: SENS_DEFAUT[cle] || 'asc' }
+    );
 
-  const pagination = usePagination(bulletinsFiltres, 25, `${recherche}|${periode}`);
+  const entete = (cle, libelle) => (
+    <th
+      className={listes.sortable}
+      onClick={() => basculerTri(cle)}
+      aria-sort={tri.cle === cle ? (tri.sens === 'asc' ? 'ascending' : 'descending') : 'none'}
+    >
+      {libelle}
+      {tri.cle === cle && (tri.sens === 'asc' ? <ChevronUp size={13} /> : <ChevronDown size={13} />)}
+    </th>
+  );
+
+  const classesDispo = [...new Set(bulletins.map((b) => b.classe_nom).filter(Boolean))].sort(comparer);
+  const statutsDispo = [...new Set(bulletins.map((b) => b.statut).filter(Boolean))].sort(comparer);
+
+  const texte = norm(recherche.trim());
+  const bulletinsFiltres = bulletins
+    .filter(
+      (b) =>
+        norm(`${b.eleve_nom} ${b.classe_nom} ${b.eleve_matricule}`).includes(texte) &&
+        (!periode || b.trimestre === periode) &&
+        (!classeFiltre || b.classe_nom === classeFiltre) &&
+        (!statutFiltre || b.statut === statutFiltre)
+    )
+    .sort(comparateurs[tri.cle] || comparateurs.classe);
+  if (tri.sens === 'desc') bulletinsFiltres.reverse();
+
+  const nbBrouillons = bulletins.filter((b) => b.statut === 'brouillon').length;
+  const filtresActifs = recherche || periode || classeFiltre || statutFiltre;
+  const effacerFiltres = () => {
+    setRecherche('');
+    setPeriode('');
+    setClasseFiltre('');
+    setStatutFiltre('');
+  };
+
+  const pagination = usePagination(
+    bulletinsFiltres,
+    25,
+    `${recherche}|${periode}|${classeFiltre}|${statutFiltre}|${tri.cle}|${tri.sens}`
+  );
 
   return (
     <div className={styles.wrapper}>
       <BoutonRetour vers="/dashboardAdmin" />
 
       <h1 className={styles.title}>Bulletins</h1>
-      <p className={styles.subtitle}>{bulletins.length} bulletin(s)</p>
+      <p className={styles.subtitle}>
+        {bulletins.length} bulletin(s)
+        {nbBrouillons > 0 && ` · ${nbBrouillons} brouillon(s) à valider`}
+      </p>
 
       {!loading && bulletins.length > 0 && (
-        <div className={styles.filtersRow}>
-          <div className={styles.searchBar}>
+        <div className={listes.barre}>
+          <div className={listes.recherche}>
             <Search size={16} color="var(--color-text-dim)" />
             <input
               type="text"
-              placeholder="Rechercher par élève ou classe..."
+              placeholder="Rechercher par élève, matricule ou classe..."
               value={recherche}
               onChange={(e) => setRecherche(e.target.value)}
             />
           </div>
-          <select className={styles.periodeSelect} value={periode} onChange={(e) => setPeriode(e.target.value)}>
+
+          <select
+            className={listes.select}
+            value={classeFiltre}
+            onChange={(e) => setClasseFiltre(e.target.value)}
+            aria-label="Filtrer par classe"
+          >
+            <option value="">Toutes les classes</option>
+            {classesDispo.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+
+          <select
+            className={listes.select}
+            value={periode}
+            onChange={(e) => setPeriode(e.target.value)}
+            aria-label="Filtrer par période"
+          >
             <option value="">Toutes les périodes</option>
             {Object.entries(TRIMESTRE_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
+
+          <select
+            className={listes.select}
+            value={statutFiltre}
+            onChange={(e) => setStatutFiltre(e.target.value)}
+            aria-label="Filtrer par statut"
+          >
+            <option value="">Tous les statuts</option>
+            {statutsDispo.map((s) => <option key={s} value={s}>{majuscule(s)}</option>)}
+          </select>
+
+          {filtresActifs && (
+            <button type="button" className={listes.effacer} onClick={effacerFiltres}>
+              <X size={14} /> Effacer les filtres
+            </button>
+          )}
         </div>
       )}
 
@@ -117,16 +220,17 @@ const Bulletins = () => {
 
       {!loading && bulletinsFiltres.length > 0 && (
         <>
+          <p className={listes.compteur}>{bulletinsFiltres.length} bulletin(s) affiché(s)</p>
           <div className={styles.tableWrapper}>
             <table className={`${styles.table} stack`}>
               <thead>
                 <tr>
-                  <th>Élève</th>
-                  <th>Classe</th>
-                  <th>Période</th>
-                  <th>Moyenne</th>
-                  <th>Rang</th>
-                  <th>Statut</th>
+                  {entete('eleve', 'Élève')}
+                  {entete('classe', 'Classe')}
+                  {entete('periode', 'Période')}
+                  {entete('moyenne', 'Moyenne')}
+                  {entete('rang', 'Rang')}
+                  {entete('statut', 'Statut')}
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -139,6 +243,7 @@ const Bulletins = () => {
                       onClick={() => navigate(`/dashboardAdmin/eleves/${b.eleve}`)}
                     >
                       {b.eleve_nom}
+                      {b.eleve_matricule && <small className={listes.matriculePetit}>{b.eleve_matricule}</small>}
                     </td>
                     <td data-label="Classe">{b.classe_nom}</td>
                     <td data-label="Période">{TRIMESTRE_LABEL[b.trimestre]}</td>

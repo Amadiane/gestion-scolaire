@@ -6,12 +6,16 @@ import CONFIG from '../../config/config.js';
 import BoutonRetour from '../../components/BoutonRetour/BoutonRetour.jsx';
 import { ajouterOperation, operationsEnAttente, synchroniser } from '../../offline/file.js';
 import styles from '../../theme/pages/admin/Notes.module.css';
+import listes from '../../theme/pages/admin/Listes.module.css';
 
 const TRIMESTRES = [
   { value: 't1', label: '1er trimestre' },
   { value: 't2', label: '2ème trimestre' },
   { value: 't3', label: '3ème trimestre' },
 ];
+
+const comparer = (a, b) =>
+  String(a || '').localeCompare(String(b || ''), 'fr', { numeric: true, sensitivity: 'base' });
 
 const NotesEnseignant = () => {
   const location = useLocation();
@@ -22,12 +26,14 @@ const NotesEnseignant = () => {
   const [valeurs, setValeurs] = useState({});
   const [existantes, setExistantes] = useState({});
   const [nbAttente, setNbAttente] = useState(0);
+  const [triSaisie, setTriSaisie] = useState('matricule');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [erreur, setErreur] = useState('');
 
   const aff = affectations.find((a) => String(a.id) === choix);
+  const bareme = aff?.bareme_note || 20;
 
   useEffect(() => {
     api.get(CONFIG.API_MES_AFFECTATIONS)
@@ -71,6 +77,13 @@ const NotesEnseignant = () => {
     charger();
   }, [aff, trimestre]);
 
+  const estVide = (v) => v === undefined || v === null || v === '';
+  const valeurInvalide = (v) => {
+    if (estVide(v)) return false;
+    const n = Number(v);
+    return Number.isNaN(n) || n < 0 || n > bareme;
+  };
+
   // Range les notes dans la file d'attente de l'appareil (envoi automatique plus tard).
   const placerEnFile = async (lignes) => {
     try {
@@ -97,8 +110,14 @@ const NotesEnseignant = () => {
     setMessage('');
     setErreur('');
 
+    const nbInvalides = eleves.filter((e) => valeurInvalide(valeurs[e.id])).length;
+    if (nbInvalides > 0) {
+      setErreur(`${nbInvalides} note(s) hors limites (de 0 à ${bareme}) : corrigez les cases en rouge.`);
+      return;
+    }
+
     const lignes = eleves
-      .filter((e) => valeurs[e.id] !== undefined && valeurs[e.id] !== '')
+      .filter((e) => !estVide(valeurs[e.id]))
       .map((e) => ({
         eleve: e.id,
         matiere: aff.matiere_id,
@@ -147,6 +166,24 @@ const NotesEnseignant = () => {
     }
   };
 
+  // Choix « classe · matière » regroupé par classe (ordre fourni par le serveur).
+  const groupesAffectations = [];
+  affectations.forEach((a) => {
+    let groupe = groupesAffectations.find((g) => g.classe === a.classe_nom);
+    if (!groupe) {
+      groupe = { classe: a.classe_nom, items: [] };
+      groupesAffectations.push(groupe);
+    }
+    groupe.items.push(a);
+  });
+
+  const elevesSaisie = [...eleves].sort(
+    triSaisie === 'nom'
+      ? (a, b) => comparer(`${a.nom} ${a.prenom}`, `${b.nom} ${b.prenom}`)
+      : (a, b) => comparer(a.matricule, b.matricule)
+  );
+  const nbSaisies = eleves.filter((e) => !estVide(valeurs[e.id])).length;
+
   return (
     <div className={styles.wrapper}>
       <BoutonRetour vers="/enseignant" />
@@ -157,8 +194,12 @@ const NotesEnseignant = () => {
       <div className={styles.filters}>
         <select className={styles.select} value={choix} onChange={(e) => setChoix(e.target.value)}>
           <option value="">— Classe · matière —</option>
-          {affectations.map((a) => (
-            <option key={a.id} value={a.id}>{a.classe_nom} · {a.matiere_nom}</option>
+          {groupesAffectations.map((g) => (
+            <optgroup key={g.classe} label={g.classe}>
+              {g.items.map((a) => (
+                <option key={a.id} value={a.id}>{a.classe_nom} · {a.matiere_nom}</option>
+              ))}
+            </optgroup>
           ))}
         </select>
         <select className={styles.select} value={trimestre} onChange={(e) => setTrimestre(e.target.value)}>
@@ -178,20 +219,33 @@ const NotesEnseignant = () => {
 
       {!loading && aff && eleves.length > 0 && (
         <>
+          <div className={listes.barre}>
+            <button
+              type="button"
+              className={listes.bouton}
+              onClick={() => setTriSaisie((t) => (t === 'nom' ? 'matricule' : 'nom'))}
+            >
+              {triSaisie === 'nom' ? 'Trier par matricule' : 'Trier A → Z'}
+            </button>
+          </div>
+          <p className={listes.progression}>
+            {nbSaisies}/{eleves.length} note(s) saisie(s)
+          </p>
+
           <div className={styles.tableWrapper}>
             <table className={`${styles.table} stack`}>
               <thead>
-                <tr><th>Élève</th><th>Matricule</th><th>Note (sur {aff.bareme_note})</th></tr>
+                <tr><th>Matricule</th><th>Élève</th><th>Note (sur {bareme})</th></tr>
               </thead>
               <tbody>
-                {eleves.map((e) => (
+                {elevesSaisie.map((e) => (
                   <tr key={e.id}>
-                    <td data-label="Élève">{e.prenom} {e.nom}</td>
                     <td data-label="Matricule">{e.matricule}</td>
-                    <td data-label={`Note /${aff.bareme_note}`}>
+                    <td data-label="Élève">{e.nom} {e.prenom}</td>
+                    <td data-label={`Note /${bareme}`}>
                       <input
-                        type="number" min="0" max={aff.bareme_note} step="0.25"
-                        className={styles.noteInput}
+                        type="number" min="0" max={bareme} step="0.25"
+                        className={`${styles.noteInput} ${valeurInvalide(valeurs[e.id]) ? listes.invalide : ''}`}
                         value={valeurs[e.id] ?? ''}
                         onChange={(ev) => setValeurs((prev) => ({ ...prev, [e.id]: ev.target.value }))}
                       />

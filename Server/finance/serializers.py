@@ -19,18 +19,24 @@ class FraisScolariteSerializer(serializers.ModelSerializer):
 
 class PaiementSerializer(serializers.ModelSerializer):
     eleve_nom = serializers.SerializerMethodField()
+    classe_nom = serializers.SerializerMethodField()
     mode_label = serializers.CharField(source="get_mode_display", read_only=True)
 
     class Meta:
         model = Paiement
         fields = [
-            "id", "eleve", "eleve_nom", "montant", "date_paiement", "mode", "mode_label",
+            "id", "eleve", "eleve_nom", "classe_nom", "montant", "date_paiement", "mode", "mode_label",
             "reference", "note", "numero_recu", "enregistre_par", "date_creation",
         ]
         read_only_fields = ["numero_recu", "enregistre_par", "date_creation"]
 
     def get_eleve_nom(self, obj):
         return f"{obj.eleve.prenom} {obj.eleve.nom}"
+
+    def get_classe_nom(self, obj):
+        # Valeur calculée en une seule requête par la vue (voir PaiementViewSet.get_queryset) ;
+        # absente juste après une création : le champ vaut alors None.
+        return getattr(obj, "classe_nom_annot", None)
 
     def validate_eleve(self, eleve):
         # Sécurité : on ne peut encaisser que pour un élève de SON école.

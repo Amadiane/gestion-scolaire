@@ -3,7 +3,7 @@ from decimal import Decimal, InvalidOperation
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import OuterRef, Subquery
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -13,7 +13,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from academique.models import AnneeScolaire
-from eleves.models import Eleve
+from eleves.models import Eleve, Inscription
 from tenants.mixins import TenantScopedQuerysetMixin
 
 from .models import FraisScolarite, Paiement, RemiseEleve
@@ -87,6 +87,12 @@ class PaiementViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        # Classe de l'élève pour l'année du paiement, en une seule requête SQL.
+        classe_nom = Inscription.objects.filter(
+            eleve=OuterRef("eleve"), annee_scolaire=OuterRef("annee_scolaire")
+        ).values("classe__nom")[:1]
+        qs = qs.annotate(classe_nom_annot=Subquery(classe_nom))
+
         eleve = self.request.query_params.get("eleve")
         if eleve:
             qs = qs.filter(eleve_id=eleve)

@@ -89,12 +89,13 @@ class ClasseAvecEffectifSerializer(serializers.ModelSerializer):
 class NoteSerializer(MemeEcoleMixin, serializers.ModelSerializer):
     moyenne_ponderee = serializers.ReadOnlyField()
     eleve_nom = serializers.SerializerMethodField()
+    eleve_matricule = serializers.CharField(source="eleve.matricule", read_only=True)
     matiere_nom = serializers.CharField(source="matiere.nom", read_only=True)
 
     class Meta:
         model = Note
         fields = [
-            "id", "ecole", "eleve", "eleve_nom", "matiere", "matiere_nom",
+            "id", "ecole", "eleve", "eleve_nom", "eleve_matricule", "matiere", "matiere_nom",
             "classe", "annee_scolaire", "trimestre", "valeur", "valeur_max",
             "date_saisie", "saisi_par", "moyenne_ponderee",
         ]
@@ -124,18 +125,18 @@ class NoteSerializer(MemeEcoleMixin, serializers.ModelSerializer):
 
 class BulletinSerializer(MemeEcoleMixin, serializers.ModelSerializer):
     eleve_nom = serializers.SerializerMethodField()
+    eleve_matricule = serializers.CharField(source="eleve.matricule", read_only=True)
     classe_nom = serializers.CharField(source="classe.nom", read_only=True)
     bareme = serializers.IntegerField(source="classe.niveau.bareme_note", read_only=True)
 
     class Meta:
         model = Bulletin
         fields = [
-            "id", "ecole", "eleve", "eleve_nom", "classe", "classe_nom", "bareme",
+            "id", "ecole", "eleve", "eleve_nom", "eleve_matricule", "classe", "classe_nom", "bareme",
             "annee_scolaire", "trimestre", "moyenne_generale", "rang",
             "statut", "fichier_pdf", "date_generation", "valide_par",
         ]
         read_only_fields = ["ecole", "moyenne_generale", "date_generation", "valide_par"]
-
     def get_eleve_nom(self, obj):
         return f"{obj.eleve.prenom} {obj.eleve.nom}"
 
@@ -165,3 +166,5 @@ class AffectationSerializer(MemeEcoleMixin, serializers.ModelSerializer):
         if doublon.exists():
             raise serializers.ValidationError("Cette affectation existe déjà.")
         return attrs
+
+

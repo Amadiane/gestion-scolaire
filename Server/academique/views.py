@@ -92,13 +92,24 @@ class ClasseViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
+        annee = request.query_params.get("annee")
+        if annee == "toutes":
+            pass  # historique complet, sur demande uniquement
+        elif annee and annee.isdigit():
+            queryset = queryset.filter(annee_scolaire_id=int(annee))
+        elif request.user.ecole_id:
+            # Par défaut : uniquement les classes de l'année active.
+            active = AnneeScolaire.objects.filter(ecole_id=request.user.ecole_id, est_active=True).first()
+            if active:
+                queryset = queryset.filter(annee_scolaire=active)
+        queryset = queryset.order_by("niveau__ordre", "nom")
         return Response(ClasseAvecEffectifSerializer(queryset, many=True).data)
 
     @action(detail=True, methods=["get"])
     def eleves(self, request, pk=None):
         classe = self.get_object()
         ids = classe.inscriptions.filter(annee_scolaire=classe.annee_scolaire).values_list("eleve_id", flat=True)
-        return Response(EleveSerializer(Eleve.objects.filter(id__in=ids), many=True).data)
+        return Response(EleveSerializer(Eleve.objects.filter(id__in=ids).order_by("matricule"), many=True).data)
 
 
 def _premier_message(erreurs):
