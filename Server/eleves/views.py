@@ -54,8 +54,11 @@ class ParentViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
         return Response(ParentDetailSerializer(self.get_object()).data)
 
 
+# class EleveViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
+#     queryset = Eleve.objects.all()
+#     serializer_class = EleveSerializer
 class EleveViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
-    queryset = Eleve.objects.all()
+    queryset = Eleve.objects.order_by("matricule")   # avant : Eleve.objects.all()
     serializer_class = EleveSerializer
 
     def queryset_enseignant(self, qs, user):

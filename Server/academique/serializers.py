@@ -72,12 +72,13 @@ class ClasseSerializer(MemeEcoleMixin, serializers.ModelSerializer):
 class ClasseAvecEffectifSerializer(serializers.ModelSerializer):
     effectif = serializers.SerializerMethodField()
     niveau_nom = serializers.CharField(source="niveau.nom", read_only=True)
+    niveau_ordre = serializers.IntegerField(source="niveau.ordre", read_only=True)
     bareme_note = serializers.IntegerField(source="niveau.bareme_note", read_only=True)
 
     class Meta:
         model = Classe
         fields = [
-            "id", "nom", "niveau_nom", "bareme_note",
+            "id", "nom", "niveau_nom", "niveau_ordre", "bareme_note",
             "annee_scolaire", "effectif_max", "effectif",
         ]
 

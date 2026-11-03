@@ -2,12 +2,13 @@
   padding: 32px 36px;
 }
 
+/* ===== En-tête ===== */
 .headerRow {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 22px;
   flex-wrap: wrap;
 }
 
@@ -33,15 +34,104 @@
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
   white-space: nowrap;
 }
 
+.addButton:hover { filter: brightness(1.1); }
+
+/* ===== Onglets « Par classe / Toute l'école » ===== */
+.vues {
+  display: inline-flex;
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 16px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.vueBtn {
+  padding: 9px 18px;
+  border: none;
+  border-radius: 9px;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.vueBtn:hover { color: var(--color-primary); }
+
+.vueActive,
+.vueActive:hover {
+  background: var(--color-primary);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(30, 58, 95, 0.25);
+}
+
+/* ===== Boutons de classe ===== */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px 7px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.chip:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.chipActive,
+.chipActive:hover {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.chipCount {
+  min-width: 24px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(30, 58, 95, 0.1);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--color-primary);
+}
+
+.chipActive .chipCount {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+/* ===== Barre de filtres ===== */
 .filtersRow {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   flex-wrap: wrap;
 }
 
@@ -49,13 +139,18 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  width: 100%;
+  flex: 1 1 280px;
   max-width: 400px;
   height: 44px;
   padding: 0 14px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 8px;
+}
+
+.searchBar:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1);
 }
 
 .searchBar input {
@@ -65,6 +160,7 @@
   border: none;
   outline: none;
   font-size: 14px;
+  font-family: inherit;
   color: var(--color-text);
 }
 
@@ -90,9 +186,7 @@
   background-size: 16px;
 }
 
-.classeSelect:hover {
-  border-color: var(--color-text-dim);
-}
+.classeSelect:hover { border-color: var(--color-text-dim); }
 
 .classeSelect:focus {
   outline: none;
@@ -100,14 +194,61 @@
   box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1);
 }
 
+.petitSelect { min-width: 160px; }
+
+.triRapide,
+.effacer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.triRapide:hover,
+.effacer:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* ===== Messages ===== */
 .stateMsg {
   color: var(--color-text-muted);
   font-size: 14px;
+  margin-bottom: 12px;
 }
 
 .errorMsg {
   color: var(--color-danger);
   font-size: 14px;
+}
+
+.notice {
+  margin-bottom: 14px;
+  padding: 9px 14px;
+  border-radius: 8px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.compteur {
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
 }
 
 .emptyState {
@@ -122,6 +263,7 @@
   border-radius: 12px;
 }
 
+/* ===== Tableau ===== */
 .tableWrapper {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -153,8 +295,25 @@
   border-bottom: 1px solid var(--color-border);
 }
 
-.table tr:last-child td {
-  border-bottom: none;
+.table tr:last-child td { border-bottom: none; }
+
+.sortable {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.sortable:hover { color: var(--color-primary); }
+.sortable svg { margin-left: 4px; vertical-align: -2px; }
+
+.groupRow td {
+  padding: 10px 18px;
+  background: var(--color-card);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-primary);
 }
 
 .clickableRow {
@@ -162,9 +321,7 @@
   transition: background 0.1s;
 }
 
-.clickableRow:hover {
-  background: var(--color-card);
-}
+.clickableRow:hover { background: var(--color-card); }
 
 .badge {
   display: inline-block;
@@ -191,30 +348,38 @@
   color: var(--color-danger);
 }
 
+/* ===== Mobile ===== */
 @media (max-width: 640px) {
-  .wrapper {
-    padding: 20px 16px;
-  }
+  .wrapper { padding: 20px 16px; }
 
-  .headerRow {
-    flex-direction: column;
-  }
+  .headerRow { flex-direction: column; }
 
   .addButton {
     width: 100%;
     justify-content: center;
   }
 
+  .vues { display: flex; width: 100%; }
+  .vueBtn { flex: 1; }
+
+  /* Beaucoup de classes : une seule ligne défilante plutôt qu'un mur de boutons */
+  .chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .chip { flex-shrink: 0; }
+
   .filtersRow {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .searchBar {
-    max-width: 100%;
-  }
+  .searchBar { max-width: 100%; flex: none; }
 
-  .classeSelect {
-    width: 100%;
-  }
+  .classeSelect,
+  .petitSelect,
+  .triRapide,
+  .effacer { width: 100%; }
 }

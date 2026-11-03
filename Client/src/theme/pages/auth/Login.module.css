@@ -342,3 +342,135 @@
   .submitButton { transition: none; }
   .spinner { animation-duration: 1.5s; }
 }
+
+/* ===== Vues, classes, tri ===== */
+.vues {
+  display: inline-flex;
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 16px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+
+.vueBtn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.vueActive {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.chip:hover { border-color: var(--color-primary); }
+
+.chipActive {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.chipCount {
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(30, 58, 95, 0.1);
+  font-size: 11px;
+  text-align: center;
+}
+
+.chipActive .chipCount { background: rgba(255, 255, 255, 0.22); }
+
+.petitSelect { min-width: 150px; }
+
+.triRapide,
+.effacer {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.triRapide:hover,
+.effacer:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+.notice {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--color-card);
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.compteur {
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.sortable {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.sortable svg { margin-left: 4px; vertical-align: -2px; }
+
+.groupRow td {
+  padding: 10px 18px;
+  background: var(--color-card);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+@media (max-width: 640px) {
+  .vues { width: 100%; }
+  .vueBtn { flex: 1; }
+  .petitSelect,
+  .triRapide,
+  .effacer { width: 100%; justify-content: center; }
+}
