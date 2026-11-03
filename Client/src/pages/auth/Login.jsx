@@ -157,6 +157,12 @@ const Login = () => {
     localStorage.setItem('user', JSON.stringify(user));
     localStorage.setItem('compte_local', identifiant);
     memoriserIdentifiant(identifiant);
+
+    // NOUVEAU : mot de passe temporaire → l'utilisateur doit d'abord en choisir un personnel.
+    if (user.doit_changer_mdp) {
+      navigate('/changer-mot-de-passe');
+      return;
+    }
     navigate(user.is_superuser ? '/sylium' : (REDIRECTIONS_PAR_ROLE[user.role] || '/dashboardAdmin'));
   };
 
@@ -235,7 +241,9 @@ const Login = () => {
       }
 
       let meData = tokenData.user;
-      if (!meData) {
+      // NOUVEAU : on relit le profil si la réponse de connexion n'indique pas
+      // l'obligation de changer de mot de passe.
+      if (!meData || !('doit_changer_mdp' in meData)) {
         try {
           const meRes = await requete(
             CONFIG.API_UTILISATEUR_MOI,

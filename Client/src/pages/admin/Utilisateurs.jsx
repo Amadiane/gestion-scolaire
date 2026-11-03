@@ -4,6 +4,8 @@ import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
 import BoutonRetour from '../../components/BoutonRetour/BoutonRetour.jsx';
 import Pagination from '../../components/Pagination/Pagination.jsx';
+import FenetreConfirmation from '../../components/FenetresCompte/FenetreConfirmation.jsx';
+import FenetreIdentifiants from '../../components/FenetresCompte/FenetreIdentifiants.jsx';
 import usePagination from '../../hooks/usePagination.js';
 import AjouterUtilisateurModal from './AjouterUtilisateurModal.jsx';
 import styles from '../../theme/pages/admin/Utilisateurs.module.css';
@@ -46,7 +48,10 @@ const Utilisateurs = () => {
   const [statutFiltre, setStatutFiltre] = useState('');
   const [tri, setTri] = useState({ cle: 'role', sens: 'asc' });
   const [modalOuvert, setModalOuvert] = useState(false);
-  const [mdpGenere, setMdpGenere] = useState(null);
+
+  const [aReinitialiser, setAReinitialiser] = useState(null);
+  const [reinitEnCours, setReinitEnCours] = useState(false);
+  const [identifiants, setIdentifiants] = useState(null);
 
   const charger = async () => {
     setLoading(true);
@@ -68,8 +73,11 @@ const Utilisateurs = () => {
     charger();
   }, []);
 
-  const handleSuccess = () => {
+  const handleSuccess = (nouveau) => {
     setModalOuvert(false);
+    if (nouveau) {
+      setIdentifiants({ titre: 'Compte créé', ...nouveau });
+    }
     charger();
   };
 
@@ -84,13 +92,24 @@ const Utilisateurs = () => {
     }
   };
 
-  const handleReinitialiser = async (utilisateur) => {
-    if (!window.confirm(`Générer un nouveau mot de passe pour ${utilisateur.username} ?`)) return;
+  const confirmerReinitialisation = async () => {
+    if (!aReinitialiser) return;
+    setReinitEnCours(true);
     try {
-      const res = await api.post(`${CONFIG.API_UTILISATEUR_DETAIL(utilisateur.id)}reinitialiser_mot_de_passe/`);
-      setMdpGenere({ username: utilisateur.username, motDePasse: res.data.nouveau_mot_de_passe });
+      const res = await api.post(`${CONFIG.API_UTILISATEUR_DETAIL(aReinitialiser.id)}reinitialiser_mot_de_passe/`);
+      setIdentifiants({
+        titre: 'Mot de passe réinitialisé',
+        nom: nomComplet(aReinitialiser),
+        username: res.data.username || aReinitialiser.username,
+        motDePasse: res.data.nouveau_mot_de_passe,
+      });
+      setAReinitialiser(null);
+      charger();
     } catch {
+      setAReinitialiser(null);
       alert("Impossible de réinitialiser le mot de passe.");
+    } finally {
+      setReinitEnCours(false);
     }
   };
 
@@ -235,9 +254,14 @@ const Utilisateurs = () => {
                       >
                         {u.is_active ? 'Actif' : 'Désactivé'}
                       </button>
+                      {u.doit_changer_mdp && (
+                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-dim)', marginTop: 4 }}>
+                          Mot de passe à changer
+                        </div>
+                      )}
                     </td>
                     <td data-label="Actions">
-                      <button className={styles.resetPwdButton} onClick={() => handleReinitialiser(u)}>
+                      <button className={styles.resetPwdButton} onClick={() => setAReinitialiser(u)}>
                         <KeyRound size={13} /> Réinitialiser
                       </button>
                     </td>
@@ -250,17 +274,26 @@ const Utilisateurs = () => {
         </>
       )}
 
-      {mdpGenere && (
-        <div className={styles.overlay} onClick={() => setMdpGenere(null)}>
-          <div className={styles.pwdModal} onClick={(e) => e.stopPropagation()}>
-            <h3>Nouveau mot de passe généré</h3>
-            <p className={styles.pwdWarning}>
-              Communiquez-le immédiatement à <strong>{mdpGenere.username}</strong> — il ne sera plus jamais affiché.
-            </p>
-            <div className={styles.pwdDisplay}>{mdpGenere.motDePasse}</div>
-            <button className={styles.pwdCloseButton} onClick={() => setMdpGenere(null)}>Fermer</button>
-          </div>
-        </div>
+      {aReinitialiser && (
+        <FenetreConfirmation
+          titre="Réinitialiser le mot de passe ?"
+          message={`Un mot de passe temporaire sera généré pour ${nomComplet(aReinitialiser) || aReinitialiser.username}. L'ancien mot de passe ne fonctionnera plus et l'utilisateur devra en choisir un nouveau à sa prochaine connexion.`}
+          confirmer="Réinitialiser"
+          danger
+          enCours={reinitEnCours}
+          onConfirm={confirmerReinitialisation}
+          onCancel={() => setAReinitialiser(null)}
+        />
+      )}
+
+      {identifiants && (
+        <FenetreIdentifiants
+          titre={identifiants.titre}
+          nom={identifiants.nom}
+          username={identifiants.username}
+          motDePasse={identifiants.motDePasse}
+          onClose={() => setIdentifiants(null)}
+        />
       )}
 
       {modalOuvert && (

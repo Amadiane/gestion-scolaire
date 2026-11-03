@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/auth/Login.jsx';
+import ChangerMotDePasse from './pages/auth/ChangerMotDePasse.jsx';
 import AdminLayout from './layouts/AdminLayout.jsx';
 import DashboardAdmin from './pages/admin/DashboardAdmin.jsx';
 import Eleves from './pages/admin/Eleves.jsx';
@@ -31,6 +32,9 @@ const PrivateRoute = ({ children, roles, superuser }) => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   if (!token) return <Navigate to="/login" replace />;
 
+  // Mot de passe temporaire : rien d'autre n'est accessible tant qu'il n'est pas remplacé.
+  if (user.doit_changer_mdp) return <Navigate to="/changer-mot-de-passe" replace />;
+
   if (superuser) {
     return user.is_superuser ? children : <Navigate to={ACCUEIL[user.role] || '/login'} replace />;
   }
@@ -45,6 +49,7 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/changer-mot-de-passe" element={<ChangerMotDePasse />} />
 
       <Route
         path="/sylium"

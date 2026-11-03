@@ -52,6 +52,8 @@ const CONFIG = {
   API_SYLIUM_PLANS: `${BASE_URL}/api/sylium/plans/`,
   API_SYLIUM_PLAN_DETAIL: (id) => `${BASE_URL}/api/sylium/plans/${id}/`,
 
+  API_CHANGER_MDP: `${BASE_URL}/api/utilisateur/changer-mot-de-passe/`,
+
   CLOUDINARY_NAME: "kdcjs7fx",
 };
 

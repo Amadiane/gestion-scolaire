@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
 import styles from '../../theme/pages/admin/AjouterUtilisateurModal.module.css';
+import fc from '../../theme/components/FenetresCompte.module.css';
 
 const ROLES = [
   { value: 'directeur', label: 'Directeur' },
@@ -12,12 +13,20 @@ const ROLES = [
   { value: 'enseignant', label: 'Enseignant' },
 ];
 
+// Sans caractères ambigus (0/O, 1/l/I) : le mot de passe est recopié à la main.
+const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+const genererMotDePasse = (longueur = 10) => {
+  const octets = new Uint32Array(longueur);
+  crypto.getRandomValues(octets);
+  return Array.from(octets, (n) => ALPHABET[n % ALPHABET.length]).join('');
+};
+
 const AjouterUtilisateurModal = ({ onClose, onSuccess }) => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({
     username: '', first_name: '', last_name: '', email: '',
-    telephone: '', role: 'enseignant', password: '',
+    telephone: '', role: 'enseignant', password: genererMotDePasse(),
   });
 
   const handleChange = (e) => {
@@ -31,7 +40,12 @@ const AjouterUtilisateurModal = ({ onClose, onSuccess }) => {
     setError('');
     try {
       await api.post(CONFIG.API_UTILISATEURS, form);
-      onSuccess();
+      // La fenêtre des identifiants est affichée par la page parente.
+      onSuccess({
+        username: form.username,
+        motDePasse: form.password,
+        nom: `${form.first_name} ${form.last_name}`.trim(),
+      });
     } catch (err) {
       const messages = err.response?.data;
       if (messages && typeof messages === 'object') {
@@ -60,7 +74,7 @@ const AjouterUtilisateurModal = ({ onClose, onSuccess }) => {
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.field}>
             <label>Identifiant de connexion *</label>
-            <input name="username" value={form.username} onChange={handleChange} required />
+            <input name="username" value={form.username} onChange={handleChange} required autoCapitalize="none" />
           </div>
 
           <div className={styles.row}>
@@ -92,8 +106,20 @@ const AjouterUtilisateurModal = ({ onClose, onSuccess }) => {
           </div>
 
           <div className={styles.field}>
-            <label>Mot de passe * (6 caractères minimum)</label>
-            <input type="password" name="password" value={form.password} onChange={handleChange} required minLength={6} />
+            <label>Mot de passe temporaire * (6 caractères minimum)</label>
+            <div className={fc.genRow}>
+              <input name="password" value={form.password} onChange={handleChange} required minLength={6} autoComplete="off" />
+              <button
+                type="button"
+                className={fc.genBtn}
+                onClick={() => setForm((p) => ({ ...p, password: genererMotDePasse() }))}
+              >
+                Générer
+              </button>
+            </div>
+            <p className={fc.aide}>
+              L'utilisateur devra choisir son propre mot de passe à sa première connexion.
+            </p>
           </div>
 
           <div className={styles.actions}>

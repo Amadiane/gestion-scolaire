@@ -1,5 +1,4 @@
 import secrets
-import string
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView
@@ -13,7 +12,18 @@ from tenants.mixins import TenantScopedQuerysetMixin
 from tenants.permissions import IsDirecteur, IsSubscriptionActive
 
 from .models import Utilisateur
-from .serializers import UtilisateurCreateSerializer, UtilisateurSerializer
+from .serializers import (
+    ChangerMotDePasseSerializer,
+    UtilisateurCreateSerializer,
+    UtilisateurSerializer,
+)
+
+# Sans caractères ambigus (0/O, 1/l/I) : le mot de passe est lu et recopié à la main.
+ALPHABET_LISIBLE = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789"
+
+
+def generer_mot_de_passe(longueur=10):
+    return "".join(secrets.choice(ALPHABET_LISIBLE) for _ in range(longueur))
 
 
 # --- Vues HTML (tests via navigateur) ---
@@ -39,6 +49,23 @@ def api_utilisateur_courant(request):
     return Response(UtilisateurSerializer(request.user).data)
 
 
+@api_view(["POST"])
+@permission_classes([IsSubscriptionActive])
+def api_changer_mot_de_passe(request):
+    """
+    L'utilisateur connecté choisit son propre mot de passe.
+    Exige l'ancien (le temporaire donné par le directeur) et lève l'obligation de changement.
+    """
+    serializer = ChangerMotDePasseSerializer(data=request.data, context={"request": request})
+    serializer.is_valid(raise_exception=True)
+
+    user = request.user
+    user.set_password(serializer.validated_data["nouveau_mot_de_passe"])
+    user.doit_changer_mdp = False
+    user.save(update_fields=["password", "doit_changer_mdp"])
+    return Response(UtilisateurSerializer(user).data)
+
+
 class UtilisateurViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
     """Gestion des comptes du personnel par le directeur de l'école."""
     queryset = Utilisateur.objects.all()
@@ -55,7 +82,7 @@ class UtilisateurViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
         if not user.is_superuser:
             # Un directeur ne touche jamais aux comptes Sylium.
             qs = qs.exclude(is_superuser=True)
-        return qs
+        return qs.order_by("last_name", "first_name", "username")
 
     def perform_create(self, serializer):
         ecole = self.request.user.ecole
@@ -66,8 +93,8 @@ class UtilisateurViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
     @action(detail=True, methods=["post"])
     def reinitialiser_mot_de_passe(self, request, pk=None):
         utilisateur = self.get_object()
-        alphabet = string.ascii_letters + string.digits
-        nouveau = "".join(secrets.choice(alphabet) for _ in range(10))
+        nouveau = generer_mot_de_passe()
         utilisateur.set_password(nouveau)
-        utilisateur.save()
-        return Response({"nouveau_mot_de_passe": nouveau})
+        utilisateur.doit_changer_mdp = True
+        utilisateur.save(update_fields=["password", "doit_changer_mdp"])
+        return Response({"username": utilisateur.username, "nouveau_mot_de_passe": nouveau})

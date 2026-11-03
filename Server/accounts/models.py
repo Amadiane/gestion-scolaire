@@ -1,6 +1,3 @@
-from django.db import models
-
-# Create your models here.
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from tenants.models import School
@@ -34,6 +31,11 @@ class Utilisateur(AbstractUser):
         help_text="Détermine ce que cet utilisateur peut voir/faire une fois connecté."
     )
     telephone = models.CharField(max_length=20, blank=True)
+    doit_changer_mdp = models.BooleanField(
+        default=False,
+        help_text="Vrai après création ou réinitialisation : l'utilisateur doit choisir "
+                  "son propre mot de passe à la prochaine connexion.",
+    )
 
     def __str__(self):
         if self.ecole:
