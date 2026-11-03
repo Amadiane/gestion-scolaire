@@ -6,6 +6,11 @@ import CONFIG from '../../config/config.js';
 import BoutonRetour from '../../components/BoutonRetour/BoutonRetour.jsx';
 import styles from '../../theme/pages/admin/AnneesScolaires.module.css';
 
+const fmtDate = (v) => {
+  const [a, m, j] = String(v || '').slice(0, 10).split('-');
+  return j ? `${j}/${m}/${a}` : '—';
+};
+
 const AnneesScolaires = () => {
   const navigate = useNavigate();
   const [annees, setAnnees] = useState([]);
@@ -22,6 +27,7 @@ const AnneesScolaires = () => {
     try {
       const res = await api.get(CONFIG.API_ANNEES_SCOLAIRES);
       setAnnees(res.data);
+      setError('');
     } catch {
       setError("Impossible de charger les années scolaires.");
     } finally {
@@ -40,8 +46,12 @@ const AnneesScolaires = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSaving(true);
     setFormError('');
+    if (form.date_fin <= form.date_debut) {
+      setFormError("La date de fin doit être postérieure à la date de début.");
+      return;
+    }
+    setSaving(true);
     try {
       await api.post(CONFIG.API_ANNEES_SCOLAIRES, { ...form, est_active: false });
       setModalOuvert(false);
@@ -87,6 +97,13 @@ const AnneesScolaires = () => {
     }
   };
 
+  // L'année active d'abord, puis les plus récentes.
+  const triees = [...annees].sort(
+    (a, b) =>
+      Number(b.est_active) - Number(a.est_active) ||
+      String(b.date_debut).localeCompare(String(a.date_debut))
+  );
+
   return (
     <div className={styles.wrapper}>
       <BoutonRetour vers="/dashboardAdmin" />
@@ -113,7 +130,7 @@ const AnneesScolaires = () => {
 
       {!loading && !error && annees.length > 0 && (
         <div className={styles.list}>
-          {annees.map((annee) => (
+          {triees.map((annee) => (
             <div
               key={annee.id}
               className={styles.row}
@@ -122,7 +139,7 @@ const AnneesScolaires = () => {
               <div className={styles.rowInfo}>
                 <span className={styles.rowNom}>{annee.nom}</span>
                 <span className={styles.rowDates}>
-                  {annee.date_debut} → {annee.date_fin}
+                  {fmtDate(annee.date_debut)} → {fmtDate(annee.date_fin)}
                 </span>
               </div>
 
@@ -176,7 +193,7 @@ const AnneesScolaires = () => {
               </div>
               <div className={styles.field}>
                 <label>Date de fin *</label>
-                <input type="date" name="date_fin" value={form.date_fin} onChange={handleChange} required />
+                <input type="date" name="date_fin" value={form.date_fin} min={form.date_debut || undefined} onChange={handleChange} required />
               </div>
 
               <div className={styles.modalActions}>

@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, LogOut, Building2, Trash2, Copy, X, AlertTriangle } from 'lucide-react';
+import { Plus, LogOut, Building2, Trash2, Copy, X, AlertTriangle, Search } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
 import { formatGNF } from '../../utils/finance.js';
 import formStyles from '../../theme/pages/admin/AjouterEleveModal.module.css';
+import listes from '../../theme/pages/admin/Listes.module.css';
 import styles from '../../theme/pages/sylium/Sylium.module.css';
 
 const STATUT = {
@@ -17,6 +18,14 @@ const STATUT = {
 
 const DUREES = [[30, '1 mois'], [90, '3 mois'], [365, '1 an']];
 
+const SEUIL_ALERTE_JOURS = 30;
+
+const TRIS_ECOLES = {
+  nom: 'Nom (A → Z)',
+  fin: "Fin d'abonnement la plus proche",
+  eleves: "Plus grand nombre d'élèves",
+};
+
 const message = (err, defaut) => {
   const data = err.response?.data;
   if (Array.isArray(data)) return data[0];
@@ -29,6 +38,10 @@ const message = (err, defaut) => {
 
 const sansAccents = (s) =>
   s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+const norm = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const comparer = (a, b) =>
+  String(a || '').localeCompare(String(b || ''), 'fr', { numeric: true, sensitivity: 'base' });
 
 const anneeParDefaut = () => {
   const now = new Date();
@@ -49,6 +62,10 @@ const Sylium = () => {
   const [actionId, setActionId] = useState(null);
   const [nouveauPlan, setNouveauPlan] = useState({ nom: '', prix_mensuel: '', prix_annuel: '', effectif_max: '', modules_inclus: '' });
   const [planError, setPlanError] = useState('');
+
+  const [recherche, setRecherche] = useState('');
+  const [statutFiltre, setStatutFiltre] = useState('');
+  const [triEcoles, setTriEcoles] = useState('nom');
 
   const [form, setForm] = useState(null);
   const [usernameModifie, setUsernameModifie] = useState(false);
@@ -170,6 +187,32 @@ const Sylium = () => {
 
   const copier = (texte) => navigator.clipboard?.writeText(texte);
 
+  // ---------- Filtres et tri des écoles ----------
+  const q = norm(recherche.trim());
+  const joursRestants = (e) => (e.jours_restants == null ? 99999 : e.jours_restants);
+
+  const ecolesFiltrees = ecoles
+    .filter(
+      (e) =>
+        norm(`${e.nom} ${e.email_contact} ${(e.directeurs || []).join(' ')}`).includes(q) &&
+        (!statutFiltre || e.statut === statutFiltre)
+    )
+    .sort(
+      triEcoles === 'fin'
+        ? (a, b) => joursRestants(a) - joursRestants(b) || comparer(a.nom, b.nom)
+        : triEcoles === 'eleves'
+          ? (a, b) => (b.nb_eleves || 0) - (a.nb_eleves || 0) || comparer(a.nom, b.nom)
+          : (a, b) => comparer(a.nom, b.nom)
+    );
+
+  const compteStatuts = {};
+  ecoles.forEach((e) => { compteStatuts[e.statut] = (compteStatuts[e.statut] || 0) + 1; });
+  const statutsPresents = Object.keys(compteStatuts);
+
+  const plansTries = [...plans].sort(
+    (a, b) => Number(a.prix_mensuel) - Number(b.prix_mensuel) || comparer(a.nom, b.nom)
+  );
+
   return (
     <div className={styles.wrapper}>
       <header className={styles.header}>
@@ -206,12 +249,73 @@ const Sylium = () => {
             {plans.length === 0 && <span className={styles.hint}>Créez d'abord un plan dans l'onglet « Plans d'abonnement ».</span>}
           </div>
 
+          {ecoles.length > 0 && (
+            <>
+              <div className={listes.stats}>
+                {statutsPresents.map((s) => (
+                  <span key={s} className={listes.stat}>
+                    {compteStatuts[s]} {(STATUT[s]?.[0] || s).toLowerCase()}
+                  </span>
+                ))}
+              </div>
+
+              <div className={listes.barre}>
+                <div className={listes.recherche}>
+                  <Search size={16} color="var(--color-text-dim)" />
+                  <input
+                    type="text"
+                    placeholder="Rechercher une école, un e-mail ou un directeur..."
+                    value={recherche}
+                    onChange={(e) => setRecherche(e.target.value)}
+                  />
+                </div>
+
+                <select
+                  className={listes.select}
+                  value={statutFiltre}
+                  onChange={(e) => setStatutFiltre(e.target.value)}
+                  aria-label="Filtrer par statut"
+                >
+                  <option value="">Tous les statuts</option>
+                  {statutsPresents.map((s) => (
+                    <option key={s} value={s}>{STATUT[s]?.[0] || s}</option>
+                  ))}
+                </select>
+
+                <select
+                  className={listes.select}
+                  value={triEcoles}
+                  onChange={(e) => setTriEcoles(e.target.value)}
+                  aria-label="Trier les écoles"
+                >
+                  {Object.entries(TRIS_ECOLES).map(([cle, label]) => (
+                    <option key={cle} value={cle}>{label}</option>
+                  ))}
+                </select>
+
+                {(recherche || statutFiltre) && (
+                  <button
+                    type="button"
+                    className={listes.effacer}
+                    onClick={() => { setRecherche(''); setStatutFiltre(''); }}
+                  >
+                    <X size={14} /> Effacer
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+
           {ecoles.length === 0 ? (
             <div className={styles.emptyState}><Building2 size={36} color="var(--color-text-dim)" /><p>Aucune école cliente pour le moment.</p></div>
+          ) : ecolesFiltrees.length === 0 ? (
+            <div className={styles.emptyState}><p>Aucune école ne correspond à ces filtres.</p></div>
           ) : (
             <div className={styles.grid}>
-              {ecoles.map((e) => {
+              {ecolesFiltrees.map((e) => {
                 const [label, ton] = STATUT[e.statut] || [e.statut, 'warn'];
+                const bientotFini =
+                  e.statut === 'actif' && e.jours_restants != null && e.jours_restants <= SEUIL_ALERTE_JOURS;
                 return (
                   <div key={e.id} className={styles.card}>
                     <div className={styles.cardTop}>
@@ -227,7 +331,12 @@ const Sylium = () => {
                       <div><dt>Élèves</dt><dd>{e.nb_eleves}</dd></div>
                       <div>
                         <dt>Fin d'abonnement</dt>
-                        <dd>{e.date_fin ? `${new Date(e.date_fin).toLocaleDateString('fr-FR')} (${e.jours_restants} j)` : '—'}</dd>
+                        <dd>
+                          {e.date_fin ? `${new Date(e.date_fin).toLocaleDateString('fr-FR')} (${e.jours_restants} j)` : '—'}
+                          {bientotFini && (
+                            <> <span className={`${styles.badge} ${styles.badge_warn}`}>Expire bientôt</span></>
+                          )}
+                        </dd>
                       </div>
                       <div><dt>Directeur</dt><dd>{e.directeurs.join(', ') || '—'}</dd></div>
                     </dl>
@@ -288,7 +397,7 @@ const Sylium = () => {
                   <tr><th>Plan</th><th>Mensuel</th><th>Annuel</th><th>Élèves max</th><th>Modules</th><th></th></tr>
                 </thead>
                 <tbody>
-                  {plans.map((p) => (
+                  {plansTries.map((p) => (
                     <tr key={p.id}>
                       <td data-label="Plan"><strong>{p.nom}</strong></td>
                       <td data-label="Mensuel">{formatGNF(p.prix_mensuel)}</td>

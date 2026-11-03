@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Phone, Mail, Users } from 'lucide-react';
+import { Search, Plus, Phone, Mail, Users, X } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
 import BoutonRetour from '../../components/BoutonRetour/BoutonRetour.jsx';
@@ -8,6 +8,18 @@ import Pagination from '../../components/Pagination/Pagination.jsx';
 import usePagination from '../../hooks/usePagination.js';
 import AjouterParentModal from './AjouterParentModal.jsx';
 import styles from '../../theme/pages/admin/Parents.module.css';
+import listes from '../../theme/pages/admin/Listes.module.css';
+
+const norm = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const comparer = (a, b) =>
+  String(a || '').localeCompare(String(b || ''), 'fr', { numeric: true, sensitivity: 'base' });
+const chiffres = (s) => String(s || '').replace(/\D/g, '');
+
+const TRIS = {
+  nom: { label: 'Nom (A → Z)', fn: (a, b) => comparer(a.nom, b.nom) || comparer(a.prenom, b.prenom) },
+  prenom: { label: 'Prénom (A → Z)', fn: (a, b) => comparer(a.prenom, b.prenom) || comparer(a.nom, b.nom) },
+  recents: { label: 'Plus récents', fn: (a, b) => comparer(b.date_creation, a.date_creation) },
+};
 
 const Parents = () => {
   const navigate = useNavigate();
@@ -15,6 +27,7 @@ const Parents = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [recherche, setRecherche] = useState('');
+  const [tri, setTri] = useState('nom');
   const [modalOuvert, setModalOuvert] = useState(false);
 
   const chargerParents = async () => {
@@ -22,6 +35,7 @@ const Parents = () => {
     try {
       const res = await api.get(CONFIG.API_PARENTS);
       setParents(res.data);
+      setError('');
     } catch {
       setError("Impossible de charger la liste des parents.");
     } finally {
@@ -38,11 +52,20 @@ const Parents = () => {
     chargerParents();
   };
 
-  const parentsFiltres = parents.filter((p) =>
-    `${p.nom} ${p.prenom} ${p.telephone}`.toLowerCase().includes(recherche.toLowerCase())
-  );
+  const q = norm(recherche.trim());
+  const qNum = chiffres(recherche);
 
-  const pagination = usePagination(parentsFiltres, 24, recherche);
+  const parentsFiltres = parents
+    .filter(
+      (p) =>
+        !q ||
+        norm(`${p.nom} ${p.prenom} ${p.email || ''}`).includes(q) ||
+        norm(p.telephone).includes(q) ||
+        (qNum.length >= 3 && chiffres(p.telephone).includes(qNum))
+    )
+    .sort(TRIS[tri].fn);
+
+  const pagination = usePagination(parentsFiltres, 24, `${recherche}|${tri}`);
 
   return (
     <div className={styles.wrapper}>
@@ -58,14 +81,33 @@ const Parents = () => {
         </button>
       </div>
 
-      <div className={styles.searchBar}>
-        <Search size={16} color="var(--color-text-dim)" />
-        <input
-          type="text"
-          placeholder="Rechercher par nom, prénom ou téléphone..."
-          value={recherche}
-          onChange={(e) => setRecherche(e.target.value)}
-        />
+      <div className={listes.barre}>
+        <div className={listes.recherche}>
+          <Search size={16} color="var(--color-text-dim)" />
+          <input
+            type="text"
+            placeholder="Rechercher par nom, prénom, e-mail ou téléphone..."
+            value={recherche}
+            onChange={(e) => setRecherche(e.target.value)}
+          />
+        </div>
+
+        <select
+          className={listes.select}
+          value={tri}
+          onChange={(e) => setTri(e.target.value)}
+          aria-label="Trier les parents"
+        >
+          {Object.entries(TRIS).map(([cle, t]) => (
+            <option key={cle} value={cle}>{t.label}</option>
+          ))}
+        </select>
+
+        {recherche && (
+          <button type="button" className={listes.effacer} onClick={() => setRecherche('')}>
+            <X size={14} /> Effacer
+          </button>
+        )}
       </div>
 
       {loading && <p className={styles.stateMsg}>Chargement...</p>}
@@ -80,6 +122,10 @@ const Parents = () => {
 
       {!loading && !error && parentsFiltres.length > 0 && (
         <>
+          <p className={listes.compteur}>
+            {parentsFiltres.length}
+            {parentsFiltres.length !== parents.length ? ` sur ${parents.length}` : ''} parent(s) affiché(s)
+          </p>
           <div className={styles.grid}>
             {pagination.pageItems.map((parent) => (
               <div
