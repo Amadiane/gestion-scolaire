@@ -16,27 +16,20 @@ export const estMemorisable = (config) =>
   !/\/token\//.test(config.url || '');
 
 // Enregistre (chiffré) la réponse d'une consultation.
+// Le cache est un bonus : une erreur ici ne doit jamais gêner l'utilisateur.
 export async function memoriser(config, data) {
   try {
     const username = localStorage.getItem('compte_local');
-    if (!username) {
-      console.warn('[offline] pas de compte_local : reconnectez-vous avec internet');
-      return;
-    }
     const cle = await lireCle();
-    if (!cle) {
-      console.warn('[offline] clé de chiffrement absente : reconnectez-vous avec internet');
-      return;
-    }
+    if (!username || !cle) return;
     await db.cache.put({
       cle: `${username}|${identifiantRequete(config)}`,
       username,
       le: Date.now(),
       contenu: await chiffrer(cle, data),
     });
-    console.info('[offline] mémorisé :', identifiantRequete(config));
-  } catch (err) {
-    console.warn('[offline] échec de la mémorisation :', err);
+  } catch {
+    /* ignoré */
   }
 }
 
@@ -49,13 +42,9 @@ export async function relire(config) {
     const cle = await lireCle();
     if (!cle) return { manqueCle: true };
     const ligne = await db.cache.get(`${username}|${identifiantRequete(config)}`);
-    if (!ligne) {
-      console.warn('[offline] rien en mémoire pour :', identifiantRequete(config));
-      return null;
-    }
+    if (!ligne) return null;
     return { data: await dechiffrer(cle, ligne.contenu), le: ligne.le };
-  } catch (err) {
-    console.warn('[offline] échec de la relecture :', err);
+  } catch {
     return null;
   }
 }

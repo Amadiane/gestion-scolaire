@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Download, Wallet, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, Download, Wallet, Trash2, AlertTriangle, Printer } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
 import BoutonRetour from '../../components/BoutonRetour/BoutonRetour.jsx';
 import Pagination from '../../components/Pagination/Pagination.jsx';
 import usePagination from '../../hooks/usePagination.js';
+import { operationsEnAttente } from '../../offline/file.js';
+import { imprimerRecuProvisoire } from '../../offline/recu.js';
 import PaiementModal from './PaiementModal.jsx';
 import { formatGNF, MODES, telechargerRecu } from '../../utils/finance.js';
 import styles from '../../theme/pages/admin/Finance.module.css';
@@ -24,9 +26,10 @@ const Finance = () => {
   const [recuId, setRecuId] = useState(null);
   const [nouveauFrais, setNouveauFrais] = useState({ niveau: '', libelle: 'Scolarité', montant: '' });
   const [fraisError, setFraisError] = useState('');
+  const [enAttente, setEnAttente] = useState([]);
 
-  const charger = useCallback(async () => {
-    setLoading(true);
+  const charger = useCallback(async (silencieux = false) => {
+    if (!silencieux) setLoading(true);
     setError('');
     try {
       const [p, a, f, n] = await Promise.all([
@@ -48,9 +51,17 @@ const Finance = () => {
     } finally {
       setLoading(false);
     }
+    setEnAttente(await operationsEnAttente('paiement'));
   }, []);
 
   useEffect(() => { charger(); }, [charger]);
+
+  // Quand la file change (saisie ou fin de synchronisation), on met la liste à jour.
+  useEffect(() => {
+    const maj = () => charger(true);
+    window.addEventListener('sylium:file-changee', maj);
+    return () => window.removeEventListener('sylium:file-changee', maj);
+  }, [charger]);
 
   const handleRecu = async (paiement) => {
     setRecuId(paiement.id);
@@ -92,6 +103,11 @@ const Finance = () => {
       alert('Impossible de supprimer ce frais.');
     }
   };
+
+  const attenteFiltres = enAttente.filter((p) =>
+    `${p.eleveLabel} ${p.numeroProvisoire}`.toLowerCase().includes(recherche.toLowerCase())
+  );
+  const totalEnAttente = enAttente.reduce((somme, p) => somme + Number(p.montant || 0), 0);
 
   const paiementsFiltres = paiements.filter((p) =>
     `${p.eleve_nom} ${p.numero_recu}`.toLowerCase().includes(recherche.toLowerCase())
@@ -141,6 +157,14 @@ const Finance = () => {
             </div>
           </div>
 
+          {enAttente.length > 0 && (
+            <div className={styles.errorBanner} style={{ background: '#fef3c7', color: '#92400e' }}>
+              <AlertTriangle size={16} />
+              {enAttente.length} paiement(s) en attente d'envoi ({formatGNF(totalEnAttente)} GNF) :
+              ils ne sont pas encore inclus dans les totaux ci-dessus.
+            </div>
+          )}
+
           <div className={styles.tabs}>
             {[
               ['paiements', `Paiements (${paiements.length})`],
@@ -165,7 +189,7 @@ const Finance = () => {
                 value={recherche}
                 onChange={(e) => setRecherche(e.target.value)}
               />
-              {paiementsFiltres.length === 0 ? (
+              {paiementsFiltres.length === 0 && attenteFiltres.length === 0 ? (
                 <div className={styles.emptyState}><Wallet size={36} color="var(--color-text-dim)" /><p>Aucun paiement trouvé.</p></div>
               ) : (
                 <>
@@ -175,6 +199,29 @@ const Finance = () => {
                         <tr><th>Reçu</th><th>Date</th><th>Élève</th><th>Montant</th><th>Mode</th><th></th></tr>
                       </thead>
                       <tbody>
+                        {attenteFiltres.map((p) => (
+                          <tr key={p.uuid_client}>
+                            <td data-label="Reçu">
+                              {p.numeroProvisoire}{' '}
+                              <span className={styles.badge} style={{ background: '#fef3c7', color: '#92400e' }}>
+                                En attente
+                              </span>
+                            </td>
+                            <td data-label="Date">{new Date(p.date_paiement).toLocaleDateString('fr-FR')}</td>
+                            <td data-label="Élève">{p.eleveLabel}</td>
+                            <td data-label="Montant" className={styles.montant}>{formatGNF(p.montant)}</td>
+                            <td data-label="Mode">{MODES[p.mode] || p.mode}</td>
+                            <td data-label="Reçu provisoire">
+                              <button
+                                className={styles.iconButton}
+                                onClick={() => imprimerRecuProvisoire(p)}
+                                title="Imprimer le reçu provisoire"
+                              >
+                                <Printer size={15} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
                         {pagination.pageItems.map((p) => (
                           <tr key={p.id}>
                             <td data-label="Reçu">{p.numero_recu}</td>
@@ -203,7 +250,7 @@ const Finance = () => {
                       </tbody>
                     </table>
                   </div>
-                  <Pagination {...pagination} unite="paiements" />
+                  {paiementsFiltres.length > 0 && <Pagination {...pagination} unite="paiements" />}
                 </>
               )}
             </>
@@ -304,6 +351,7 @@ const Finance = () => {
           eleveInitial={modal.eleve}
           onClose={() => setModal(null)}
           onSuccess={handlePaiementCree}
+          onEnAttente={() => { setModal(null); charger(true); }}
         />
       )}
     </div>

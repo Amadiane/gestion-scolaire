@@ -1,5 +1,8 @@
+import uuid
 from decimal import Decimal, InvalidOperation
 
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import transaction
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -28,6 +31,20 @@ def _contexte(request):
     if annee is None:
         raise ValidationError("Aucune année scolaire active : activez-en une avant d'utiliser la finance.")
     return ecole, annee
+
+
+def _uuid_ou_none(valeur):
+    try:
+        return uuid.UUID(str(valeur)) if valeur else None
+    except ValueError:
+        return None
+
+
+def _premier_message(erreurs):
+    premier = next(iter(erreurs.values()), "Données invalides.")
+    if isinstance(premier, (list, tuple)) and premier:
+        premier = premier[0]
+    return str(premier)
 
 
 def _situation_detaillee(ecole, annee, eleve):
@@ -66,6 +83,8 @@ class PaiementViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
     serializer_class = PaiementSerializer
     permission_classes = PERMISSIONS_FINANCE
 
+    CHAMPS_SYNC = ("eleve", "montant", "date_paiement", "mode", "reference", "note")
+
     def get_queryset(self):
         qs = super().get_queryset()
         eleve = self.request.query_params.get("eleve")
@@ -80,9 +99,21 @@ class PaiementViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
                 qs = qs.filter(annee_scolaire=annee)
         return qs
 
+    def create(self, request, *args, **kwargs):
+        # Si le même encaissement (même référence d'appareil) a déjà été enregistré
+        # — réponse perdue, nouvel essai — on renvoie l'existant au lieu d'en créer un second.
+        ref = _uuid_ou_none(request.data.get("uuid_client"))
+        if ref and request.user.ecole_id:
+            deja = Paiement.objects.filter(ecole_id=request.user.ecole_id, reference_client=ref).first()
+            if deja:
+                return Response(self.get_serializer(deja).data, status=200)
+        return super().create(request, *args, **kwargs)
+
     def perform_create(self, serializer):
         ecole, annee = _contexte(self.request)
-        serializer.save(ecole=ecole, annee_scolaire=annee, enregistre_par=self.request.user)
+        ref = _uuid_ou_none(self.request.data.get("uuid_client"))
+        extra = {"reference_client": ref} if ref else {}
+        serializer.save(ecole=ecole, annee_scolaire=annee, enregistre_par=self.request.user, **extra)
 
     @action(detail=True, methods=["get"])
     def recu(self, request, pk=None):
@@ -90,6 +121,50 @@ class PaiementViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
         reponse = HttpResponse(generer_recu_pdf(paiement), content_type="application/pdf")
         reponse["Content-Disposition"] = f'attachment; filename="{paiement.numero_recu}.pdf"'
         return reponse
+
+    # ---------- Synchronisation des encaissements faits hors ligne ----------
+
+    def _synchroniser_un(self, request, ecole, annee, op):
+        ref = _uuid_ou_none(op.get("uuid_client"))
+        if ref is None:
+            return {"statut": "erreur", "detail": "Référence de l'opération invalide."}
+
+        deja = Paiement.objects.filter(ecole=ecole, reference_client=ref).first()
+        if deja:
+            return {"statut": "identique", "id": deja.id, "numero_recu": deja.numero_recu}
+
+        donnees = {k: op.get(k) for k in self.CHAMPS_SYNC}
+        donnees["reference"] = donnees["reference"] or ""
+        donnees["note"] = donnees["note"] or ""
+        serializer = self.get_serializer(data=donnees)
+        if not serializer.is_valid():
+            return {"statut": "erreur", "detail": _premier_message(serializer.errors)}
+
+        paiement = serializer.save(
+            ecole=ecole, annee_scolaire=annee, enregistre_par=request.user, reference_client=ref
+        )
+        return {"statut": "cree", "id": paiement.id, "numero_recu": paiement.numero_recu}
+
+    @action(detail=False, methods=["post"], url_path="synchroniser")
+    def synchroniser(self, request):
+        operations = request.data.get("operations")
+        if not isinstance(operations, list) or len(operations) > 200:
+            return Response({"detail": "Liste 'operations' requise (200 maximum)."}, status=400)
+        ecole, annee = _contexte(request)
+
+        resultats = []
+        for op in operations:
+            client_id = op.get("client_id") if isinstance(op, dict) else None
+            try:
+                with transaction.atomic():
+                    resultat = self._synchroniser_un(request, ecole, annee, op)
+            except DjangoValidationError as e:
+                resultat = {"statut": "erreur", "detail": e.messages[0] if e.messages else "Données invalides."}
+            except (ValueError, TypeError, KeyError, AttributeError):
+                resultat = {"statut": "erreur", "detail": "Opération mal formée."}
+            resultat["client_id"] = client_id
+            resultats.append(resultat)
+        return Response({"resultats": resultats})
 
 
 @api_view(["GET"])

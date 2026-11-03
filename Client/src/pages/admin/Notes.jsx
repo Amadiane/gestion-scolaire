@@ -3,6 +3,7 @@ import { Save, History, AlertTriangle, Search, X } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
 import BoutonRetour from '../../components/BoutonRetour/BoutonRetour.jsx';
+import { ajouterOperation, operationsEnAttente } from '../../offline/file.js';
 import styles from '../../theme/pages/admin/Notes.module.css';
 
 const TRIMESTRES = [
@@ -30,6 +31,8 @@ const Notes = () => {
   const [notesExistantes, setNotesExistantes] = useState({});
   const [valeurs, setValeurs] = useState({});
   const [bareme, setBareme] = useState(20);
+  const [nbAttente, setNbAttente] = useState(0);
+  const [rev, setRev] = useState(0);
 
   const [loadingListe, setLoadingListe] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -44,8 +47,8 @@ const Notes = () => {
     try {
       const res = await api.get(CONFIG.API_NOTES);
       setToutesLesNotes([...res.data].sort((a, b) => new Date(b.date_saisie) - new Date(a.date_saisie)));
-    } catch (err) {
-      console.error('Erreur chargement historique notes :', err);
+    } catch {
+      /* hors ligne sans copie locale : l'historique reste vide */
     } finally {
       setLoadingHistorique(false);
     }
@@ -72,6 +75,13 @@ const Notes = () => {
     };
     chargerBase();
     chargerHistorique();
+  }, []);
+
+  // Quand la file change (note rangée sur l'appareil, ou envoyée au serveur), on rafraîchit.
+  useEffect(() => {
+    const maj = () => { chargerHistorique(); setRev((r) => r + 1); };
+    window.addEventListener('sylium:file-changee', maj);
+    return () => window.removeEventListener('sylium:file-changee', maj);
   }, []);
 
   // Retour à la page 1 dès qu'un filtre change.
@@ -106,47 +116,100 @@ const Notes = () => {
             idsNotes[n.eleve] = n.id;
             valeursInit[n.eleve] = n.valeur;
           });
+
+        // Notes saisies sur cet appareil et pas encore envoyées : elles priment à l'affichage.
+        const enAttente = (await operationsEnAttente('note')).filter(
+          (o) => o.classe === Number(classeId) && o.matiere === Number(matiereId) && o.trimestre === trimestre
+        );
+        enAttente.forEach((o) => { valeursInit[o.eleve] = o.valeur; });
+
         setNotesExistantes(idsNotes);
         setValeurs(valeursInit);
+        setNbAttente(enAttente.length);
+      } catch {
+        setEleves([]);
+        setErreurSaisie("Impossible de charger les élèves de cette classe. Ouvrez-la une fois avec internet pour l'utiliser hors ligne.");
       } finally {
         setLoadingListe(false);
       }
     };
     chargerEleves();
-  }, [classeId, matiereId, trimestre, anneeActive, classes]);
+  }, [classeId, matiereId, trimestre, anneeActive, classes, rev]);
 
   const handleValeurChange = (eleveId, val) => {
     setValeurs((prev) => ({ ...prev, [eleveId]: val }));
   };
 
+  // Range les notes dans la file d'attente de l'appareil (envoi automatique plus tard).
+  const placerEnFile = async (lignes) => {
+    try {
+      for (const l of lignes) {
+        await ajouterOperation({
+          type: 'note',
+          cleNat: `note|${l.eleve}|${l.matiere}|${l.classe}|${l.annee_scolaire}|${l.trimestre}`,
+          charge: l,
+        });
+      }
+      setNbAttente(lignes.length);
+      setMessage(
+        `${lignes.length} note(s) enregistrée(s) sur cet appareil. ` +
+        'Elles seront envoyées automatiquement dès le retour du réseau.'
+      );
+    } catch {
+      setErreurSaisie("Impossible d'enregistrer sur cet appareil. Reconnectez-vous avec internet puis réessayez.");
+    }
+  };
+
   const handleEnregistrerTout = async () => {
-    setSaving(true);
     setMessage('');
     setErreurSaisie('');
+
+    const lignes = eleves
+      .filter((e) => valeurs[e.id] !== undefined && valeurs[e.id] !== '')
+      .map((e) => ({
+        eleve: e.id,
+        matiere: Number(matiereId),
+        classe: Number(classeId),
+        annee_scolaire: anneeActive.id,
+        trimestre,
+        valeur: String(valeurs[e.id]),
+      }));
+
+    if (lignes.length === 0) {
+      setErreurSaisie('Saisissez au moins une note.');
+      return;
+    }
+
+    setSaving(true);
+
+    // Pas de réseau : on enregistre directement sur l'appareil.
+    if (!navigator.onLine) {
+      await placerEnFile(lignes);
+      setSaving(false);
+      return;
+    }
+
     try {
-      const appels = eleves
-        .filter((e) => valeurs[e.id] !== undefined && valeurs[e.id] !== '')
-        .map((e) => {
-          const payload = {
-            eleve: e.id,
-            matiere: Number(matiereId),
-            classe: Number(classeId),
-            annee_scolaire: anneeActive.id,
-            trimestre,
-            valeur: valeurs[e.id],
-          };
-          const noteId = notesExistantes[e.id];
+      await Promise.all(
+        lignes.map((payload) => {
+          const noteId = notesExistantes[payload.eleve];
           return noteId
             ? api.patch(`${CONFIG.API_NOTES}${noteId}/`, payload)
             : api.post(CONFIG.API_NOTES, payload);
-        });
-      await Promise.all(appels);
+        })
+      );
+      setNbAttente(0);
       setMessage('Notes enregistrées avec succès.');
       chargerHistorique();
     } catch (err) {
-      const data = err.response?.data;
-      const premier = data && typeof data === 'object' ? Object.values(data)[0] : null;
-      setErreurSaisie(Array.isArray(premier) ? premier[0] : "Erreur lors de l'enregistrement d'une ou plusieurs notes.");
+      if (!err.response) {
+        // Le réseau a lâché en cours de route : rien n'est perdu, on garde tout sur l'appareil.
+        await placerEnFile(lignes);
+      } else {
+        const data = err.response.data;
+        const premier = data && typeof data === 'object' ? Object.values(data)[0] : null;
+        setErreurSaisie(Array.isArray(premier) ? premier[0] : "Erreur lors de l'enregistrement d'une ou plusieurs notes.");
+      }
     } finally {
       setSaving(false);
     }
@@ -233,6 +296,9 @@ const Notes = () => {
         <p className={styles.errorMsg}>Aucune année scolaire active — impossible de saisir des notes.</p>
       )}
 
+      {nbAttente > 0 && !message && (
+        <p className={styles.infoMsg}>{nbAttente} note(s) de cet écran sont en attente d'envoi.</p>
+      )}
       {message && <p className={styles.infoMsg}>{message}</p>}
       {erreurSaisie && <p className={styles.errorMsg}>{erreurSaisie}</p>}
 

@@ -68,13 +68,23 @@ class Paiement(models.Model):
         "accounts.Utilisateur", on_delete=models.SET_NULL, null=True, related_name="paiements_enregistres"
     )
     date_creation = models.DateTimeField(auto_now_add=True)
+        # Référence générée par l'appareil : empêche tout double encaissement à la synchronisation.
+    reference_client = models.UUIDField(null=True, blank=True, editable=False)
 
     class Meta:
         verbose_name = "Paiement"
         verbose_name_plural = "Paiements"
         ordering = ["-date_paiement", "-id"]
+        # constraints = [
+        #     models.UniqueConstraint(fields=["ecole", "numero_recu"], name="recu_unique_par_ecole")
+        # ]
         constraints = [
-            models.UniqueConstraint(fields=["ecole", "numero_recu"], name="recu_unique_par_ecole")
+            models.UniqueConstraint(fields=["ecole", "numero_recu"], name="recu_unique_par_ecole"),
+            models.UniqueConstraint(
+                fields=["ecole", "reference_client"],
+                condition=models.Q(reference_client__isnull=False),
+                name="paiement_reference_unique_par_ecole",
+            ),
         ]
 
     def __str__(self):

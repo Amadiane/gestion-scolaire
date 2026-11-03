@@ -1,13 +1,20 @@
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, WifiOff } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
 import { MODES } from '../../utils/finance.js';
+import { ajouterOperation } from '../../offline/file.js';
+import { prochainNumeroProvisoire, imprimerRecuProvisoire } from '../../offline/recu.js';
 import styles from '../../theme/pages/admin/AjouterEleveModal.module.css';
 
-const aujourdhui = () => new Date().toISOString().slice(0, 10);
+// Date locale (et non UTC) : un encaissement du soir ne doit pas passer au lendemain.
+const aujourdhui = () => new Date().toLocaleDateString('en-CA');
 
-const PaiementModal = ({ eleveInitial, onClose, onSuccess }) => {
+// onSuccess(paiement) : paiement enregistré en ligne.
+// onEnAttente() : paiement rangé sur l'appareil (sans réseau). Si absent, la fenêtre se ferme simplement.
+const PaiementModal = ({ eleveInitial, onClose, onSuccess, onEnAttente }) => {
+  const enLigne = useOnlineStatus();
   const [eleves, setEleves] = useState([]);
   const [recherche, setRecherche] = useState('');
   const [saving, setSaving] = useState(false);
@@ -36,20 +43,76 @@ const PaiementModal = ({ eleveInitial, onClose, onSuccess }) => {
     .filter((e) => `${e.nom} ${e.prenom} ${e.matricule}`.toLowerCase().includes(recherche.toLowerCase()))
     .slice(0, 50);
 
+  const libelleEleve = () => {
+    if (eleveInitial) return eleveInitial.nom;
+    const el = eleves.find((x) => String(x.id) === String(form.eleve));
+    return el ? `${el.prenom} ${el.nom} (${el.matricule})` : '';
+  };
+
+  // Range l'encaissement sur l'appareil et remet un reçu provisoire.
+  const mettreEnFile = async (uuidClient) => {
+    const numeroProvisoire = prochainNumeroProvisoire();
+    const charge = {
+      uuid_client: uuidClient,
+      eleve: Number(form.eleve),
+      montant: String(form.montant),
+      date_paiement: form.date_paiement,
+      mode: form.mode,
+      reference: form.reference,
+      note: `Reçu provisoire ${numeroProvisoire}`,
+      numeroProvisoire,
+      eleveLabel: libelleEleve(),
+    };
+    await ajouterOperation({ type: 'paiement', cleNat: `paiement|${uuidClient}`, charge });
+    imprimerRecuProvisoire(charge);
+    (onEnAttente || onClose)();
+  };
+
+  const messageEchecLocal =
+    "Impossible d'enregistrer sur cet appareil. Reconnectez-vous avec internet puis réessayez.";
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (saving) return;
+    if (!form.eleve) {
+      setError('Choisissez un élève.');
+      return;
+    }
     setSaving(true);
     setError('');
+
+    // Même référence pour la tentative en ligne et l'éventuelle mise en file : jamais de double encaissement.
+    const uuidClient = crypto.randomUUID();
+
+    if (!navigator.onLine) {
+      try {
+        await mettreEnFile(uuidClient);
+      } catch {
+        setError(messageEchecLocal);
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
     try {
-      const res = await api.post(CONFIG.API_PAIEMENTS, form);
+      const res = await api.post(CONFIG.API_PAIEMENTS, { ...form, uuid_client: uuidClient });
       onSuccess(res.data);
     } catch (err) {
-      const data = err.response?.data;
-      if (data && typeof data === 'object') {
-        const premier = Object.values(data)[0];
-        setError(Array.isArray(premier) ? premier[0] : String(premier));
+      if (!err.response) {
+        try {
+          await mettreEnFile(uuidClient);
+        } catch {
+          setError(messageEchecLocal);
+        }
       } else {
-        setError("Erreur lors de l'enregistrement du paiement.");
+        const data = err.response.data;
+        if (data && typeof data === 'object') {
+          const premier = Object.values(data)[0];
+          setError(Array.isArray(premier) ? premier[0] : String(premier));
+        } else {
+          setError("Erreur lors de l'enregistrement du paiement.");
+        }
       }
     } finally {
       setSaving(false);
@@ -63,6 +126,16 @@ const PaiementModal = ({ eleveInitial, onClose, onSuccess }) => {
           <h2>Enregistrer un paiement</h2>
           <button className={styles.closeButton} onClick={onClose}><X size={20} /></button>
         </div>
+
+        {!enLigne && (
+          <div className={styles.errorBox} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <WifiOff size={16} />
+            <span>
+              Hors ligne : le paiement sera enregistré sur cet appareil et un reçu provisoire sera imprimé.
+              Le reçu officiel sera attribué à l'envoi.
+            </span>
+          </div>
+        )}
 
         {error && <div className={styles.errorBox}>{error}</div>}
 
@@ -123,7 +196,9 @@ const PaiementModal = ({ eleveInitial, onClose, onSuccess }) => {
           <div className={styles.actions}>
             <button type="button" className={styles.cancelButton} onClick={onClose}>Annuler</button>
             <button type="submit" className={styles.submitButton} disabled={saving}>
-              {saving ? 'Enregistrement...' : 'Enregistrer et éditer le reçu'}
+              {saving
+                ? 'Enregistrement...'
+                : enLigne ? 'Enregistrer et éditer le reçu' : 'Enregistrer et imprimer le reçu provisoire'}
             </button>
           </div>
         </form>
