@@ -6,6 +6,13 @@ import CONFIG from '../config/config.js';
 
 const prevenir = () => window.dispatchEvent(new CustomEvent('sylium:file-changee'));
 const utilisateur = () => localStorage.getItem('compte_local');
+const sansSlash = (u) => String(u).replace(/\/$/, '');
+
+// Ordre d'envoi : les élèves d'abord, puis les notes.
+const TYPES = [
+  { type: 'eleve', url: () => `${sansSlash(CONFIG.API_ELEVES)}/synchroniser/`, lot: 10 },
+  { type: 'note', url: () => `${sansSlash(CONFIG.API_NOTES)}/synchroniser/`, lot: 200 },
+];
 
 // Ajoute (ou remplace) une opération. Le contenu est chiffré avec la clé de la session.
 export async function ajouterOperation({ type, cleNat, charge }) {
@@ -80,42 +87,44 @@ export async function synchroniser() {
   enCours = true;
   const bilan = { ok: true, envoyees: 0, ecrasees: [] };
   try {
-    const lignes = await db.file
-      .where('username').equals(username)
-      .filter((l) => l.statut === 'attente' && l.type === 'note')
-      .sortBy('creeLe');
+    for (const { type, url, lot: tailleLot } of TYPES) {
+      const lignes = await db.file
+        .where('username').equals(username)
+        .filter((l) => l.statut === 'attente' && l.type === type)
+        .sortBy('creeLe');
 
-    const aEnvoyer = [];
-    for (const l of lignes) {
-      try {
-        aEnvoyer.push({ id: l.id, charge: await dechiffrer(cle, l.contenu) });
-      } catch {
-        await db.file.update(l.id, { statut: 'illisible', erreur: 'Données illisibles (mot de passe modifié depuis).' });
-      }
-    }
-
-    for (let i = 0; i < aEnvoyer.length; i += 200) {
-      const lot = aEnvoyer.slice(i, i + 200);
-      let res;
-      try {
-        res = await api.post(`${CONFIG.API_NOTES}synchroniser/`, {
-          operations: lot.map((o) => ({ client_id: o.id, ...o.charge })),
-        });
-      } catch (err) {
-        if (!err.response) return { ...bilan, ok: false, raison: 'reseau' };
-        if (err.response.status >= 500) return { ...bilan, ok: false, raison: 'serveur' };
-        const detail = err.response.data?.detail || `Refusé par le serveur (${err.response.status}).`;
-        for (const o of lot) await db.file.update(o.id, { statut: 'erreur', erreur: String(detail) });
-        continue;
+      const aEnvoyer = [];
+      for (const l of lignes) {
+        try {
+          aEnvoyer.push({ id: l.id, charge: await dechiffrer(cle, l.contenu) });
+        } catch {
+          await db.file.update(l.id, { statut: 'illisible', erreur: 'Données illisibles (mot de passe modifié depuis).' });
+        }
       }
 
-      for (const r of res.data.resultats) {
-        if (r.statut === 'erreur') {
-          await db.file.update(r.client_id, { statut: 'erreur', erreur: r.detail });
-        } else {
-          await db.file.delete(r.client_id);
-          bilan.envoyees += 1;
-          if (r.statut === 'modifie') bilan.ecrasees.push({ avant: r.ancienne_valeur, apres: r.valeur });
+      for (let i = 0; i < aEnvoyer.length; i += tailleLot) {
+        const lot = aEnvoyer.slice(i, i + tailleLot);
+        let res;
+        try {
+          res = await api.post(url(), {
+            operations: lot.map((o) => ({ client_id: o.id, ...o.charge })),
+          });
+        } catch (err) {
+          if (!err.response) return { ...bilan, ok: false, raison: 'reseau' };
+          if (err.response.status >= 500) return { ...bilan, ok: false, raison: 'serveur' };
+          const detail = err.response.data?.detail || `Refusé par le serveur (${err.response.status}).`;
+          for (const o of lot) await db.file.update(o.id, { statut: 'erreur', erreur: String(detail) });
+          continue;
+        }
+
+        for (const r of res.data.resultats) {
+          if (r.statut === 'erreur') {
+            await db.file.update(r.client_id, { statut: 'erreur', erreur: r.detail });
+          } else {
+            await db.file.delete(r.client_id);
+            bilan.envoyees += 1;
+            if (r.statut === 'modifie') bilan.ecrasees.push({ avant: r.ancienne_valeur, apres: r.valeur });
+          }
         }
       }
     }

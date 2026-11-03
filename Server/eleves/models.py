@@ -45,13 +45,23 @@ class Eleve(models.Model):
     parents = models.ManyToManyField(Parent, through="RelationParentEleve", related_name="enfants")
     statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.ACTIF)
     date_inscription = models.DateField(auto_now_add=True)
+        # Référence générée par l'appareil lors d'une saisie hors ligne : empêche les doublons à la synchronisation.
+    reference_client = models.UUIDField(null=True, blank=True, editable=False)
 
     class Meta:
         verbose_name = "Élève"
         verbose_name_plural = "Élèves"
         ordering = ["nom", "prenom"]
+        # constraints = [
+        #     models.UniqueConstraint(fields=["ecole", "matricule"], name="matricule_unique_par_ecole")
+        # ]
         constraints = [
-            models.UniqueConstraint(fields=["ecole", "matricule"], name="matricule_unique_par_ecole")
+            models.UniqueConstraint(fields=["ecole", "matricule"], name="matricule_unique_par_ecole"),
+            models.UniqueConstraint(
+                fields=["ecole", "reference_client"],
+                condition=models.Q(reference_client__isnull=False),
+                name="reference_client_unique_par_ecole",
+            ),
         ]
 
     def __str__(self):

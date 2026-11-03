@@ -1,11 +1,15 @@
 // src/pages/admin/AjouterEleveModal.jsx
 import { useState, useEffect } from 'react';
-import { X, Camera, Plus, Trash2 } from 'lucide-react';
+import { X, Camera, Plus, Trash2, WifiOff } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
+import { ajouterOperation } from '../../offline/file.js';
+import { redimensionnerPhoto } from '../../offline/photo.js';
 import styles from '../../theme/pages/admin/AjouterEleveModal.module.css';
 
 const AjouterEleveModal = ({ onClose, onSuccess }) => {
+  const enLigne = useOnlineStatus();
   const [classes, setClasses] = useState([]);
   const [anneeActive, setAnneeActive] = useState(null);
   const [parentsDisponibles, setParentsDisponibles] = useState([]);
@@ -78,15 +82,53 @@ const AjouterEleveModal = ({ onClose, onSuccess }) => {
     setLiensParents((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // Range toute la saisie (élève + classe + parents + photo) dans la file de l'appareil.
+  // Le serveur créera le tout d'un bloc au retour du réseau.
+  const mettreEnFile = async () => {
+    const parents = liensParents.filter((l) =>
+      l.mode === 'nouveau' ? l.nouveauNom && l.nouveauTelephone : l.parent
+    );
+    const avecClasse = form.classe && anneeActive;
+    const charge = {
+      reference: crypto.randomUUID(),
+      nom: form.nom.trim(),
+      prenom: form.prenom.trim(),
+      date_naissance: form.date_naissance,
+      lieu_naissance: form.lieu_naissance,
+      sexe: form.sexe,
+      classe: avecClasse ? Number(form.classe) : null,
+      annee_scolaire: avecClasse ? anneeActive.id : null,
+      photo: form.photo ? await redimensionnerPhoto(form.photo) : null,
+      parents,
+    };
+    await ajouterOperation({ type: 'eleve', cleNat: `eleve|${charge.reference}`, charge });
+    onSuccess({ enAttente: true });
+  };
+
+  const messageEchecLocal =
+    "Impossible d'enregistrer sur cet appareil. Reconnectez-vous avec internet puis réessayez.";
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (saving) return;
     setSaving(true);
     setError('');
 
+    // Pas de réseau : enregistrement sur l'appareil.
+    if (!navigator.onLine) {
+      try {
+        await mettreEnFile();
+      } catch {
+        setError(messageEchecLocal);
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
+    let eleveCree = false;
     try {
-      // multipart/form-data obligatoire car on envoie un fichier (photo)
-      // en plus des champs texte — un simple JSON ne peut pas transporter
-      // un fichier binaire.
+      // multipart/form-data obligatoire car on envoie un fichier (photo).
       const data = new FormData();
       data.append('nom', form.nom);
       data.append('prenom', form.prenom);
@@ -98,9 +140,8 @@ const AjouterEleveModal = ({ onClose, onSuccess }) => {
       const resEleve = await api.post(CONFIG.API_ELEVES, data, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+      eleveCree = true;
 
-      // Si une classe a été choisie ET qu'une année active existe,
-      // on crée l'Inscription juste après.
       if (form.classe && anneeActive) {
         await api.post(CONFIG.API_INSCRIPTIONS, {
           eleve: resEleve.data.id,
@@ -109,16 +150,12 @@ const AjouterEleveModal = ({ onClose, onSuccess }) => {
         });
       }
 
-      // Pour chaque ligne "nouveau parent" : on le crée d'abord (POST
-      // /api/parents/), puis on récupère son ID pour le lier — contrairement
-      // à un parent "existant" où l'ID est déjà connu. Boucle séquentielle
-      // (pas Promise.all) car chaque lien dépend de la création préalable
-      // du parent correspondant.
+      // Boucle séquentielle : chaque lien dépend de la création préalable du parent.
       for (const lien of liensParents) {
         let parentId = lien.parent;
 
         if (lien.mode === 'nouveau') {
-          if (!lien.nouveauNom || !lien.nouveauTelephone) continue; // ligne incomplète, ignorée
+          if (!lien.nouveauNom || !lien.nouveauTelephone) continue;
           const resParent = await api.post(CONFIG.API_PARENTS, {
             nom: lien.nouveauNom,
             prenom: lien.nouveauPrenom,
@@ -136,14 +173,28 @@ const AjouterEleveModal = ({ onClose, onSuccess }) => {
         });
       }
 
-      onSuccess();
+      onSuccess({});
     } catch (err) {
-      const messages = err.response?.data;
-      if (messages && typeof messages === 'object') {
-        const premierMessage = Object.values(messages)[0];
-        setError(Array.isArray(premierMessage) ? premierMessage[0] : String(premierMessage));
+      if (!err.response && !eleveCree) {
+        // Le réseau a lâché avant la création : rien n'existe encore, on garde tout sur l'appareil.
+        try {
+          await mettreEnFile();
+        } catch {
+          setError(messageEchecLocal);
+        }
+      } else if (!err.response) {
+        setError(
+          "Connexion perdue pendant l'enregistrement : l'élève est créé mais l'inscription ou les parents " +
+          "sont peut-être incomplets. Ouvrez sa fiche pour vérifier."
+        );
       } else {
-        setError("Erreur lors de la création de l'élève.");
+        const messages = err.response.data;
+        if (messages && typeof messages === 'object') {
+          const premierMessage = Object.values(messages)[0];
+          setError(Array.isArray(premierMessage) ? premierMessage[0] : String(premierMessage));
+        } else {
+          setError("Erreur lors de la création de l'élève.");
+        }
       }
     } finally {
       setSaving(false);
@@ -159,6 +210,13 @@ const AjouterEleveModal = ({ onClose, onSuccess }) => {
             <X size={20} />
           </button>
         </div>
+
+        {!enLigne && (
+          <div className={styles.errorBox} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <WifiOff size={16} />
+            <span>Hors ligne : l'élève sera enregistré sur cet appareil puis créé automatiquement au retour du réseau.</span>
+          </div>
+        )}
 
         {error && <div className={styles.errorBox}>{error}</div>}
 
