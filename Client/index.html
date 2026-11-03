@@ -1,14 +1,22 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Favicon et icônes -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#1E3A5F" />
+    <meta name="description" content="Sylium : gestion scolaire en ligne et hors ligne (élèves, notes, bulletins, paiements)." />
+
+    <!-- Connexion anticipée au serveur : la page de login démarre plus vite sur réseau lent -->
     <link rel="preconnect" href="https://gestion-scolaire-5epe.onrender.com" crossorigin />
-    <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0" /> -->
-     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-     <meta name="theme-color" content="#1E3A5F" />
-     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-    <title>client</title>
+    <link rel="dns-prefetch" href="https://gestion-scolaire-5epe.onrender.com" />
+
+    <title>Sylium Gestion Scolaire</title>
   </head>
   <body>
     <div id="root"></div>

@@ -14,7 +14,8 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['images/login-hero.webp', 'icons/apple-touch-icon.png'],
+      // includeAssets: ['images/login-hero.webp', 'icons/apple-touch-icon.png'],
+      includeAssets: ['images/login-hero.webp', 'images/logo-sylium.png', 'favicon.ico', 'favicon-32.png', 'favicon-48.png', 'icons/apple-touch-icon.png'],
       manifest: {
         name: 'Sylium Gestion Scolaire',
         short_name: 'Sylium',

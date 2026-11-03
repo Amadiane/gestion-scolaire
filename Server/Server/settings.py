@@ -20,7 +20,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# SECRET_KEY = 'django-insecure-j)3110n#rf&1bo=j16q1o78h4ata$87gbev(lq!h4@z5eivp0q'
+
 
 # # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG = True
@@ -104,9 +104,8 @@ REST_FRAMEWORK = {
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STORAGES = {
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 from datetime import timedelta
 
@@ -169,33 +168,7 @@ else:
     }
 
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-# DATABASE_URL = os.environ.get("DATABASE_URL")
 
-# if DATABASE_URL:
-#     DATABASES = {
-#         'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
-#     }
-# else:
-    # DATABASES = {
-    #     'default': {
-    #         'ENGINE': 'django.db.backends.mysql',
-    #         'NAME': 'gestionscolairedb',
-    #         'USER': 'root',
-    #         'PASSWORD': 'root',
-    #         'HOST': 'localhost',
-    #         'PORT': '3306',
-    #         'ATOMIC_REQUESTS': True, 
-    #         'OPTIONS': {
-    #             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
-    #         }
-    #     }
-    # }
 
 
 
