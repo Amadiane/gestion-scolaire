@@ -200,6 +200,23 @@
 
 .toggleButton:hover { color: var(--color-primary); }
 
+/* Lien « Changer d'utilisateur » */
+.changerUser {
+  margin-top: 8px;
+  padding: 0;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.changerUser:hover { color: #2F8F5B; }
+
+/* ===== Bouton « Se connecter » ===== */
 .submitButton {
   height: 54px;
   margin-top: 4px;
@@ -207,7 +224,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: linear-gradient(135deg, #1E3A5F 0%, #2F8F5B 140%);
+  background: linear-gradient(135deg, #1E3A5F 0%, #2F8F5B 100%);
   color: #fff;
   border: none;
   border-radius: 14px;
@@ -215,20 +232,21 @@
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
-  box-shadow: 0 10px 24px rgba(30, 58, 95, 0.3);
-  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 10px 24px rgba(30, 58, 95, 0.35);
+  transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
 }
 
 .submitButton:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 14px 30px rgba(30, 58, 95, 0.36);
+  filter: brightness(1.08);
+  box-shadow: 0 14px 30px rgba(30, 58, 95, 0.42);
 }
 
 .submitButton:active:not(:disabled) { transform: translateY(0); }
 
+/* Désactivé : même couleur, simplement atténuée (reste bien visible) */
 .submitButton:disabled {
-  background: var(--color-card);
-  color: var(--color-text-dim);
+  opacity: 0.55;
   box-shadow: none;
   cursor: not-allowed;
 }

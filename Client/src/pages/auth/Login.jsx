@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   User, Lock, Eye, EyeOff, GraduationCap, ArrowRight,
@@ -24,6 +24,19 @@ const REDIRECTIONS_PAR_ROLE = {
 
 const TIMEOUT_MS = 20000;
 const MAX_TENTATIVES = 3;
+
+// Seul l'identifiant est mémorisé (jamais le mot de passe).
+const CLE_DERNIER_IDENTIFIANT = 'dernier_identifiant';
+
+const lireDernierIdentifiant = () => {
+  try { return localStorage.getItem(CLE_DERNIER_IDENTIFIANT) || ''; } catch { return ''; }
+};
+const memoriserIdentifiant = (valeur) => {
+  try { localStorage.setItem(CLE_DERNIER_IDENTIFIANT, valeur); } catch { /* ignoré */ }
+};
+const oublierIdentifiant = () => {
+  try { localStorage.removeItem(CLE_DERNIER_IDENTIFIANT); } catch { /* ignoré */ }
+};
 
 const MESSAGES_PANNE = {
   timeout: 'Le serveur met trop de temps à répondre. Vérifiez votre connexion puis réessayez.',
@@ -103,7 +116,10 @@ const lireJson = async (res) => {
 
 const Login = () => {
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
+
+  // L'identifiant de la dernière session est pré-rempli ; le mot de passe est toujours vide.
+  const [memorise, setMemorise] = useState(lireDernierIdentifiant);
+  const [username, setUsername] = useState(memorise);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [codeTechnique, setCodeTechnique] = useState('');
@@ -111,15 +127,36 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
 
+  const usernameRef = useRef(null);
+  const passwordRef = useRef(null);
+
   // Arriver sur le login efface la clé de chiffrement de la session précédente :
   // c'est ce qui sécurise la déconnexion.
   useEffect(() => { effacerCle(); }, []);
+
+  // Curseur directement dans le mot de passe si l'identifiant est déjà connu.
+  useEffect(() => {
+    if (memorise) passwordRef.current?.focus();
+    else usernameRef.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const changerUtilisateur = () => {
+    oublierIdentifiant();
+    setMemorise('');
+    setUsername('');
+    setPassword('');
+    setError('');
+    setCodeTechnique('');
+    usernameRef.current?.focus();
+  };
 
   const ouvrirSession = (user, access, refresh, identifiant) => {
     localStorage.setItem('access', access);
     localStorage.setItem('refresh', refresh);
     localStorage.setItem('user', JSON.stringify(user));
     localStorage.setItem('compte_local', identifiant);
+    memoriserIdentifiant(identifiant);
     navigate(user.is_superuser ? '/sylium' : (REDIRECTIONS_PAR_ROLE[user.role] || '/dashboardAdmin'));
   };
 
@@ -270,7 +307,9 @@ const Login = () => {
         <div className={styles.formWrap}>
           <div className={styles.header}>
             <h1 className={styles.title}>Bon retour 👋</h1>
-            <p className={styles.subtitle}>Connectez-vous à votre espace</p>
+            <p className={styles.subtitle}>
+              {memorise ? 'Saisissez votre mot de passe pour continuer' : 'Connectez-vous à votre espace'}
+            </p>
           </div>
 
           {error && (
@@ -288,6 +327,7 @@ const Login = () => {
               <div className={styles.inputWrapper}>
                 <User size={17} />
                 <input
+                  ref={usernameRef}
                   id="username"
                   type="text"
                   placeholder="Votre identifiant"
@@ -299,6 +339,11 @@ const Login = () => {
                   spellCheck={false}
                 />
               </div>
+              {memorise && (
+                <button type="button" className={styles.changerUser} onClick={changerUtilisateur}>
+                  Ce n'est pas vous ? Changer d'utilisateur
+                </button>
+              )}
             </div>
 
             <div>
@@ -306,6 +351,7 @@ const Login = () => {
               <div className={styles.inputWrapper}>
                 <Lock size={17} />
                 <input
+                  ref={passwordRef}
                   id="password"
                   type={passwordVisible ? 'text' : 'password'}
                   placeholder="••••••••"
