@@ -2,7 +2,8 @@
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Users, School, BookOpen, FileText, UserCog,
-  Calendar, Wallet, ShieldCheck, ClipboardList, LogOut, X,
+  Calendar, Wallet, ShieldCheck, ClipboardList, Briefcase, CreditCard,
+  KeyRound, LogOut, X,
 } from 'lucide-react';
 import styles from '../../theme/components/Sidebar.module.css';
 
@@ -12,9 +13,11 @@ const NAV_ITEMS = [
   { to: '/dashboardAdmin', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
   { to: '/dashboardAdmin/eleves', label: 'Élèves', icon: Users },
   { to: '/dashboardAdmin/parents', label: 'Parents', icon: UserCog },
+  { to: '/dashboardAdmin/personnel', label: 'Personnel', icon: Briefcase, roles: ['directeur'] },
   { to: '/dashboardAdmin/classes', label: 'Classes', icon: School },
   { to: '/dashboardAdmin/notes', label: 'Notes', icon: BookOpen },
   { to: '/dashboardAdmin/bulletins', label: 'Bulletins', icon: FileText },
+  { to: '/dashboardAdmin/cartes', label: 'Cartes', icon: CreditCard, roles: ['directeur', 'secretaire'] },
   { to: '/dashboardAdmin/finance', label: 'Finance', icon: Wallet, roles: ['directeur', 'comptable'] },
   { to: '/dashboardAdmin/annees-scolaires', label: 'Années scolaires', icon: Calendar },
   { to: '/dashboardAdmin/utilisateurs', label: 'Utilisateurs', icon: ShieldCheck, roles: ['directeur'] },
@@ -74,6 +77,9 @@ const Sidebar = ({ isOpen, onClose }) => {
               <div className={styles.userRole}>{user.role}</div>
             </div>
           </div>
+          <NavLink to="/changer-mot-de-passe" onClick={onClose} className={styles.passwordLink}>
+            <KeyRound size={15} /> Mon mot de passe
+          </NavLink>
           <button className={styles.logoutButton} onClick={handleLogout}>
             <LogOut size={16} /> Déconnexion
           </button>

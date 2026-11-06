@@ -165,3 +165,24 @@
 @media (min-width: 861px) {
   .overlay { display: none; }
 }
+
+
+.passwordLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  font-size: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: background 0.15s;
+}
+
+.passwordLink:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}

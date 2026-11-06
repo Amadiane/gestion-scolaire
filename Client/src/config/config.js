@@ -54,6 +54,8 @@ const CONFIG = {
 
   API_CHANGER_MDP: `${BASE_URL}/api/utilisateur/changer-mot-de-passe/`,
 
+  API_PERSONNEL: `${BASE_URL}/api/personnel/`,
+
   CLOUDINARY_NAME: "kdcjs7fx",
 };
 

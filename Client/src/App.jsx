@@ -9,6 +9,8 @@ import Classes from './pages/admin/Classes.jsx';
 import RosterClasse from './pages/admin/RosterClasse.jsx';
 import Parents from './pages/admin/Parents.jsx';
 import FicheParent from './pages/admin/FicheParent.jsx';
+import Personnel from './pages/admin/Personnel.jsx';
+import Cartes from './pages/admin/Cartes.jsx';
 import Notes from './pages/admin/Notes.jsx';
 import Bulletins from './pages/admin/Bulletins.jsx';
 import AnneesScolaires from './pages/admin/AnneesScolaires.jsx';
@@ -75,6 +77,8 @@ function App() {
         <Route path="classes/:id" element={<RosterClasse />} />
         <Route path="parents" element={<Parents />} />
         <Route path="parents/:id" element={<FicheParent />} />
+        <Route path="personnel" element={<Personnel />} />
+        <Route path="cartes" element={<Cartes />} />
         <Route path="notes" element={<Notes />} />
         <Route path="bulletins" element={<Bulletins />} />
         <Route path="finance" element={<Finance />} />

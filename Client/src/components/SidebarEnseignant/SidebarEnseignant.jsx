@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, School, LogOut, X } from 'lucide-react';
+import { LayoutDashboard, BookOpen, School, KeyRound, LogOut, X } from 'lucide-react';
 import styles from '../../theme/components/SidebarEnseignant.module.css';
 
 const NAV_ITEMS = [
@@ -59,6 +59,9 @@ const SidebarEnseignant = ({ isOpen, onClose }) => {
               <div className={styles.userRole}>Enseignant</div>
             </div>
           </div>
+          <NavLink to="/changer-mot-de-passe" onClick={onClose} className={styles.passwordLink}>
+            <KeyRound size={15} /> Mon mot de passe
+          </NavLink>
           <button className={styles.logoutButton} onClick={handleLogout}>
             <LogOut size={16} /> Déconnexion
           </button>
