@@ -24,6 +24,7 @@ import DashboardEnseignant from './pages/enseignant/DashboardEnseignant.jsx';
 import MesClasses from './pages/enseignant/MesClasses.jsx';
 import NotesEnseignant from './pages/enseignant/NotesEnseignant.jsx';
 import CartePerdue from './pages/public/CartePerdue.jsx';
+import MonEcole from './pages/admin/MonEcole.jsx';
 import Sylium from './pages/sylium/Sylium.jsx';
 
 const ROLES_ADMIN = ['directeur', 'secretaire', 'comptable', 'surveillant'];
@@ -83,6 +84,7 @@ function App() {
           </PrivateRoute>
         }
       />
+      <Route path="mon-ecole" element={<MonEcole />} />
 
       <Route
         path="/dashboardAdmin"

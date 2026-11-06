@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Users, School, BookOpen, FileText, UserCog,
   Calendar, Wallet, ShieldCheck, ClipboardList, Briefcase, CreditCard,
-  KeyRound, LogOut, X,
+  Building2, KeyRound, LogOut, X,
 } from 'lucide-react';
 import styles from '../../theme/components/Sidebar.module.css';
 
@@ -22,6 +22,7 @@ const NAV_ITEMS = [
   { to: '/dashboardAdmin/annees-scolaires', label: 'Années scolaires', icon: Calendar },
   { to: '/dashboardAdmin/utilisateurs', label: 'Utilisateurs', icon: ShieldCheck, roles: ['directeur'] },
   { to: '/dashboardAdmin/affectations', label: 'Affectations', icon: ClipboardList, roles: ['directeur'] },
+  { to: '/dashboardAdmin/mon-ecole', label: 'Mon école', icon: Building2, roles: ['directeur'] },
 ];
 
 const Sidebar = ({ isOpen, onClose }) => {
