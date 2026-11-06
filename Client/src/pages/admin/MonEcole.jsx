@@ -80,7 +80,7 @@ const MonEcole = () => {
       <header className={styles.entete}>
         <div className={styles.icone}><Building2 size={22} /></div>
         <div>
-          <h1>Mon école</h1>
+          <h1>Mon</h1>
           <p>Ces informations apparaissent sur la page publique des cartes d'identité perdues.</p>
         </div>
       </header>

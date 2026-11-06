@@ -52,8 +52,8 @@ const CartePerdue = () => {
             <h1 className={styles.ecole}>{ecole || 'Établissement scolaire'}</h1>
 
             <p className={styles.texte}>
-              Cette carte appartient à {ecole ? `l'école ${ecole}` : 'un établissement scolaire'}.
-              Si vous l'avez trouvée, merci de la rapporter au secrétariat de l'école.
+            Cette carte est une carte d'identité scolaire de cet établissement.
+            Si vous l'avez trouvée, merci de la rapporter au secrétariat.
             </p>
 
             {telephone ? (
