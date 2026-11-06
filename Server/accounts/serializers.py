@@ -6,14 +6,16 @@ from .models import Utilisateur
 
 
 class UtilisateurSerializer(serializers.ModelSerializer):
+    ecole_nom = serializers.CharField(source="ecole.nom", read_only=True, default=None)
+
     class Meta:
         model = Utilisateur
         fields = [
             "id", "username", "first_name", "last_name", "email",
-            "role", "telephone", "ecole", "is_active", "date_joined", "is_superuser",
+            "role", "telephone", "ecole", "ecole_nom", "is_active", "date_joined", "is_superuser",
             "doit_changer_mdp",
         ]
-        read_only_fields = ["ecole", "date_joined", "is_superuser", "doit_changer_mdp"]
+        read_only_fields = ["ecole", "ecole_nom", "date_joined", "is_superuser", "doit_changer_mdp"]
 
 
 class UtilisateurCreateSerializer(serializers.ModelSerializer):
