@@ -84,7 +84,7 @@ function App() {
           </PrivateRoute>
         }
       />
-      <Route path="mon-ecole" element={<MonEcole />} />
+      
 
       <Route
         path="/dashboardAdmin"
@@ -96,6 +96,7 @@ function App() {
       >
         <Route index element={<DashboardAdmin />} />
         <Route path="eleves" element={<Eleves />} />
+        <Route path="mon-ecole" element={<MonEcole />} />
         <Route path="eleves/:id" element={<FicheEleve />} />
         <Route path="classes" element={<Classes />} />
         <Route path="classes/:id" element={<RosterClasse />} />
