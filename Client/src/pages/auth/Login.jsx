@@ -158,9 +158,21 @@ const Login = () => {
     localStorage.setItem('compte_local', identifiant);
     memoriserIdentifiant(identifiant);
 
-    // NOUVEAU : mot de passe temporaire → l'utilisateur doit d'abord en choisir un personnel.
+    // Destination retenue avant la connexion (scan d'une carte). Utilisée une seule fois.
+    let destination = null;
+    try {
+      destination = sessionStorage.getItem('apres_connexion');
+      sessionStorage.removeItem('apres_connexion');
+    } catch { /* ignoré */ }
+
+    // Mot de passe temporaire : le choix du mot de passe passe avant tout.
     if (user.doit_changer_mdp) {
       navigate('/changer-mot-de-passe');
+      return;
+    }
+    // Seules les adresses de cartes sont acceptées : aucune redirection vers un autre site possible.
+    if (destination && destination.startsWith('/carte/') && !user.is_superuser) {
+      navigate(destination);
       return;
     }
     navigate(user.is_superuser ? '/sylium' : (REDIRECTIONS_PAR_ROLE[user.role] || '/dashboardAdmin'));
@@ -241,7 +253,7 @@ const Login = () => {
       }
 
       let meData = tokenData.user;
-      // NOUVEAU : on relit le profil si la réponse de connexion n'indique pas
+      // On relit le profil si la réponse de connexion n'indique pas
       // l'obligation de changer de mot de passe.
       if (!meData || !('doit_changer_mdp' in meData)) {
         try {

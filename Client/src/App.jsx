@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Login from './pages/auth/Login.jsx';
 import ChangerMotDePasse from './pages/auth/ChangerMotDePasse.jsx';
 import AdminLayout from './layouts/AdminLayout.jsx';
@@ -11,6 +11,7 @@ import Parents from './pages/admin/Parents.jsx';
 import FicheParent from './pages/admin/FicheParent.jsx';
 import Personnel from './pages/admin/Personnel.jsx';
 import Cartes from './pages/admin/Cartes.jsx';
+import ScanCarte from './pages/admin/ScanCarte.jsx';
 import Notes from './pages/admin/Notes.jsx';
 import Bulletins from './pages/admin/Bulletins.jsx';
 import AnneesScolaires from './pages/admin/AnneesScolaires.jsx';
@@ -30,9 +31,17 @@ ROLES_ADMIN.forEach((r) => { ACCUEIL[r] = '/dashboardAdmin'; });
 
 // Le contrôle réel est fait par l'API ; ceci évite d'afficher des pages vides.
 const PrivateRoute = ({ children, roles, superuser }) => {
+  const location = useLocation();
   const token = localStorage.getItem('access');
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  if (!token) return <Navigate to="/login" replace />;
+
+  if (!token) {
+    // Lien de carte ouvert sans être connecté : on retient la destination pour après la connexion.
+    if (location.pathname.startsWith('/carte/')) {
+      try { sessionStorage.setItem('apres_connexion', location.pathname); } catch { /* ignoré */ }
+    }
+    return <Navigate to="/login" replace />;
+  }
 
   // Mot de passe temporaire : rien d'autre n'est accessible tant qu'il n'est pas remplacé.
   if (user.doit_changer_mdp) return <Navigate to="/changer-mot-de-passe" replace />;
@@ -52,6 +61,16 @@ function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/changer-mot-de-passe" element={<ChangerMotDePasse />} />
+
+      {/* Lien contenu dans le QR code des cartes : retrouve la personne et ouvre sa fiche. */}
+      <Route
+        path="/carte/:matricule"
+        element={
+          <PrivateRoute roles={ROLES_ADMIN}>
+            <ScanCarte />
+          </PrivateRoute>
+        }
+      />
 
       <Route
         path="/sylium"

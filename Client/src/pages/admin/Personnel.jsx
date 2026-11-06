@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Plus, Search, Briefcase, Pencil, CreditCard, ChevronUp, ChevronDown, X,
 } from 'lucide-react';
@@ -25,11 +25,13 @@ const comparateurs = {
 
 const Personnel = () => {
   const navigate = useNavigate();
+  // Le lien d'une carte ouvre cette page avec ?q=<matricule> : la liste est déjà filtrée.
+  const [params] = useSearchParams();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [membres, setMembres] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [recherche, setRecherche] = useState('');
+  const [recherche, setRecherche] = useState(params.get('q') || '');
   const [posteFiltre, setPosteFiltre] = useState('');
   const [statutFiltre, setStatutFiltre] = useState('');
   const [tri, setTri] = useState({ cle: 'matricule', sens: 'asc' });

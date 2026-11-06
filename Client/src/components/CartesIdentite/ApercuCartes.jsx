@@ -4,19 +4,22 @@ import QRCode from 'qrcode';
 import { X, Printer } from 'lucide-react';
 import styles from '../../theme/components/CartesIdentite.module.css';
 
+// Le QR code contient un lien vers l'application : l'appareil photo d'un téléphone
+// l'ouvre directement. La page n'affiche rien sans connexion préalable.
+const lienCarte = (matricule) => `${window.location.origin}/carte/${encodeURIComponent(matricule)}`;
+
 const ApercuCartes = ({ cartes, ecoleNom, onClose }) => {
   const [qr, setQr] = useState({});
   const ecole = ecoleNom || 'Établissement';
 
-  // Le QR code contient le matricule : il servira aussi plus tard à l'appel par scan.
   useEffect(() => {
     let annule = false;
     (async () => {
       const resultat = {};
       for (const c of cartes) {
         try {
-          resultat[c.cle] = await QRCode.toDataURL(c.matricule, {
-            margin: 0, width: 200, errorCorrectionLevel: 'M',
+          resultat[c.cle] = await QRCode.toDataURL(lienCarte(c.matricule), {
+            margin: 0, width: 300, errorCorrectionLevel: 'M',
           });
         } catch {
           /* QR indisponible pour cette carte : elle s'imprime sans */
