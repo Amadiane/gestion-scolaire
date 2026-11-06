@@ -19,10 +19,22 @@ const DashboardEnseignant = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  const classes = [...new Set(affectations.map((a) => a.classe_id))];
-  const totalEleves = classes
-    .map((id) => affectations.find((a) => a.classe_id === id).effectif)
-    .reduce((s, n) => s + n, 0);
+  // Regroupement par classe, en gardant l'ordre fourni par le serveur
+  // (niveau, classe, matière). Une Map conserve l'ordre d'insertion.
+  const parClasse = new Map();
+  affectations.forEach((a) => {
+    if (!parClasse.has(a.classe_id)) {
+      parClasse.set(a.classe_id, {
+        id: a.classe_id,
+        nom: a.classe_nom,
+        effectif: a.effectif,
+        items: [],
+      });
+    }
+    parClasse.get(a.classe_id).items.push(a);
+  });
+  const classes = [...parClasse.values()];
+  const totalEleves = classes.reduce((s, c) => s + (c.effectif || 0), 0);
 
   return (
     <div className={styles.wrapper}>
@@ -46,20 +58,30 @@ const DashboardEnseignant = () => {
             </div>
 
             <h2 className={styles.sectionTitle}>Mes enseignements</h2>
-            <div className={styles.cardsGrid}>
-              {affectations.map((a) => (
-                <div key={a.id} className={styles.affCard}>
-                  <div>
-                    <strong>{a.classe_nom}</strong>
-                    <span className={styles.affMatiere}>{a.matiere_nom}</span>
-                    <span className={styles.affMeta}>{a.effectif} élève(s) · sur {a.bareme_note}</span>
-                  </div>
-                  <button className={styles.affButton} onClick={() => navigate('/enseignant/notes', { state: { affectation: a.id } })}>
-                    Saisir les notes
-                  </button>
+
+            {classes.map((classe) => (
+              <div key={classe.id}>
+                <h3 className={styles.sectionTitle} style={{ fontSize: '0.95rem', marginTop: 18 }}>
+                  {classe.nom} · {classe.effectif} élève(s)
+                </h3>
+                <div className={styles.cardsGrid}>
+                  {classe.items.map((a) => (
+                    <div key={a.id} className={styles.affCard}>
+                      <div>
+                        <strong>{a.matiere_nom}</strong>
+                        <span className={styles.affMeta}>Notes sur {a.bareme_note}</span>
+                      </div>
+                      <button
+                        className={styles.affButton}
+                        onClick={() => navigate('/enseignant/notes', { state: { affectation: a.id } })}
+                      >
+                        Saisir les notes
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </>
         )
       )}

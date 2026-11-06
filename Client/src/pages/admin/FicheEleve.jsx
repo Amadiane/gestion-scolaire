@@ -7,6 +7,21 @@ import SituationFinanciere from './SituationFinanciere.jsx';
 import styles from '../../theme/pages/admin/FicheEleve.module.css';
 
 const TRIMESTRE_LABEL = { t1: '1er trimestre', t2: '2ème trimestre', t3: '3ème trimestre' };
+const RANG_TRIMESTRE = { t1: 1, t2: 2, t3: 3 };
+
+const STATUT_LABEL = {
+  actif: 'Actif',
+  suspendu: 'Suspendu',
+  exclu: 'Exclu',
+  transfere: 'Transféré',
+  diplome: 'Diplômé',
+  attente: 'En attente',
+};
+
+const fmtDate = (v) => {
+  const [a, m, j] = String(v || '').slice(0, 10).split('-');
+  return j ? `${j}/${m}/${a}` : '—';
+};
 
 const FicheEleve = () => {
   const { id } = useParams();
@@ -20,6 +35,7 @@ const FicheEleve = () => {
   useEffect(() => {
     const charger = async () => {
       setLoading(true);
+      setError('');
       try {
         const [resEleve, resBulletins] = await Promise.all([
           api.get(CONFIG.API_ELEVE_DETAIL(id)),
@@ -28,8 +44,12 @@ const FicheEleve = () => {
         setEleve(resEleve.data);
         // Le backend limite déjà à l'école ; on isole ici l'élève.
         setBulletins(resBulletins.data.filter((b) => b.eleve === Number(id)));
-      } catch {
-        setError("Impossible de charger la fiche de cet élève.");
+      } catch (err) {
+        setError(
+          err.response?.status === 404
+            ? "Cet élève n'existe pas ou n'appartient pas à votre école."
+            : "Impossible de charger la fiche de cet élève."
+        );
       } finally {
         setLoading(false);
       }
@@ -72,8 +92,24 @@ const FicheEleve = () => {
   };
 
   if (loading) return <div className={styles.wrapper}><p className={styles.stateMsg}>Chargement...</p></div>;
-  if (error) return <div className={styles.wrapper}><p className={styles.errorMsg}>{error}</p></div>;
+  if (error) {
+    return (
+      <div className={styles.wrapper}>
+        <button className={styles.backButton} onClick={() => navigate(-1)}>
+          <ArrowLeft size={16} /> Retour
+        </button>
+        <p className={styles.errorMsg}>{error}</p>
+      </div>
+    );
+  }
   if (!eleve) return null;
+
+  // Année la plus récente d'abord, puis 1er → 3ème trimestre.
+  const bulletinsTries = [...bulletins].sort(
+    (a, b) =>
+      (b.annee_scolaire ?? 0) - (a.annee_scolaire ?? 0) ||
+      (RANG_TRIMESTRE[a.trimestre] || 9) - (RANG_TRIMESTRE[b.trimestre] || 9)
+  );
 
   return (
     <div className={styles.wrapper}>
@@ -95,8 +131,12 @@ const FicheEleve = () => {
           <h1 className={styles.name}>{eleve.prenom} {eleve.nom}</h1>
           <p className={styles.matricule}>Matricule : {eleve.matricule}</p>
           <div className={styles.metaRow}>
-            <span className={`${styles.badge} ${styles['badge_' + eleve.statut]}`}>{eleve.statut}</span>
-            {eleve.classe_actuelle_nom && <span className={styles.classeTag}>{eleve.classe_actuelle_nom}</span>}
+            <span className={`${styles.badge} ${styles['badge_' + eleve.statut]}`}>
+              {STATUT_LABEL[eleve.statut] || eleve.statut}
+            </span>
+            {eleve.classe_actuelle_nom
+              ? <span className={styles.classeTag}>{eleve.classe_actuelle_nom}</span>
+              : <span className={styles.classeTag}>Sans classe</span>}
           </div>
         </div>
       </div>
@@ -105,25 +145,28 @@ const FicheEleve = () => {
         <div className={styles.card}>
           <h2 className={styles.cardTitle}>Informations personnelles</h2>
           <dl className={styles.infoList}>
-            <div><dt>Date de naissance</dt><dd>{eleve.date_naissance || '—'}</dd></div>
+            <div><dt>Date de naissance</dt><dd>{fmtDate(eleve.date_naissance)}</dd></div>
             <div><dt>Lieu de naissance</dt><dd>{eleve.lieu_naissance || '—'}</dd></div>
-            <div><dt>Sexe</dt><dd>{eleve.sexe === 'M' ? 'Masculin' : 'Féminin'}</dd></div>
-            <div><dt>Date d'inscription</dt><dd>{eleve.date_inscription || '—'}</dd></div>
+            <div><dt>Sexe</dt><dd>{eleve.sexe === 'M' ? 'Masculin' : eleve.sexe === 'F' ? 'Féminin' : '—'}</dd></div>
+            <div><dt>Date d'inscription</dt><dd>{fmtDate(eleve.date_inscription)}</dd></div>
           </dl>
         </div>
 
         <div className={styles.card}>
           <h2 className={styles.cardTitle}>
-            <FileText size={16} /> Bulletins
+            <FileText size={16} /> Bulletins ({bulletinsTries.length})
           </h2>
-          {bulletins.length === 0 ? (
+          {bulletinsTries.length === 0 ? (
             <p className={styles.emptyMsg}>Aucun bulletin pour le moment.</p>
           ) : (
             <ul className={styles.bulletinList}>
-              {bulletins.map((b) => (
+              {bulletinsTries.map((b) => (
                 <li key={b.id} className={styles.bulletinItem}>
                   <div>
-                    <span className={styles.bulletinTrimestre}>{TRIMESTRE_LABEL[b.trimestre]}</span>
+                    <span className={styles.bulletinTrimestre}>
+                      {TRIMESTRE_LABEL[b.trimestre] || b.trimestre}
+                      {b.statut === 'brouillon' && ' · Brouillon'}
+                    </span>
                     <span className={styles.bulletinMoyenne}>
                       {b.moyenne_generale != null ? `Moyenne : ${b.moyenne_generale}` : 'Pas encore calculée'}
                       {b.rang && ` · Rang : ${b.rang}`}

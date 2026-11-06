@@ -5,6 +5,14 @@ import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
 import styles from '../../theme/pages/admin/FicheAnneeScolaire.module.css';
 
+const fmtDate = (v) => {
+  const [a, m, j] = String(v || '').slice(0, 10).split('-');
+  return j ? `${j}/${m}/${a}` : '—';
+};
+
+const comparer = (a, b) =>
+  String(a || '').localeCompare(String(b || ''), 'fr', { numeric: true, sensitivity: 'base' });
+
 const FicheAnneeScolaire = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -15,11 +23,16 @@ const FicheAnneeScolaire = () => {
   useEffect(() => {
     const charger = async () => {
       setLoading(true);
+      setError('');
       try {
         const res = await api.get(`${CONFIG.API_ANNEES_SCOLAIRES}${id}/`);
         setAnnee(res.data);
-      } catch {
-        setError("Impossible de charger cette année scolaire.");
+      } catch (err) {
+        setError(
+          err.response?.status === 404
+            ? "Cette année scolaire n'existe pas ou n'appartient pas à votre école."
+            : "Impossible de charger cette année scolaire."
+        );
       } finally {
         setLoading(false);
       }
@@ -27,13 +40,33 @@ const FicheAnneeScolaire = () => {
     charger();
   }, [id]);
 
+  const retour = () => navigate('/dashboardAdmin/annees-scolaires');
+
   if (loading) return <div className={styles.wrapper}><p className={styles.stateMsg}>Chargement...</p></div>;
-  if (error) return <div className={styles.wrapper}><p className={styles.errorMsg}>{error}</p></div>;
+  if (error) {
+    return (
+      <div className={styles.wrapper}>
+        <button className={styles.backButton} onClick={retour}>
+          <ArrowLeft size={16} /> Retour aux années scolaires
+        </button>
+        <p className={styles.errorMsg}>{error}</p>
+      </div>
+    );
+  }
   if (!annee) return null;
+
+  const classes = [...(annee.classes || [])].sort(
+    (a, b) =>
+      (a.niveau_ordre ?? 9999) - (b.niveau_ordre ?? 9999) ||
+      comparer(a.niveau_nom, b.niveau_nom) ||
+      comparer(a.nom, b.nom)
+  );
+  const effectifClasses = classes.reduce((s, c) => s + (c.effectif || 0), 0);
+  const ecart = annee.nb_eleves_total != null && effectifClasses !== annee.nb_eleves_total;
 
   return (
     <div className={styles.wrapper}>
-      <button className={styles.backButton} onClick={() => navigate('/dashboardAdmin/annees-scolaires')}>
+      <button className={styles.backButton} onClick={retour}>
         <ArrowLeft size={16} /> Retour aux années scolaires
       </button>
 
@@ -47,7 +80,7 @@ const FicheAnneeScolaire = () => {
               </span>
             )}
           </div>
-          <p className={styles.dates}>{annee.date_debut} → {annee.date_fin}</p>
+          <p className={styles.dates}>{fmtDate(annee.date_debut)} → {fmtDate(annee.date_fin)}</p>
         </div>
       </div>
 
@@ -55,7 +88,7 @@ const FicheAnneeScolaire = () => {
         <div className={styles.statCard}>
           <School size={20} color="var(--color-primary)" />
           <div>
-            <span className={styles.statValue}>{annee.classes.length}</span>
+            <span className={styles.statValue}>{classes.length}</span>
             <span className={styles.statLabel}>Classe(s)</span>
           </div>
         </div>
@@ -83,13 +116,19 @@ const FicheAnneeScolaire = () => {
       </div>
 
       <div className={styles.card}>
-        <h2 className={styles.cardTitle}>Classes de cette année</h2>
+        <h2 className={styles.cardTitle}>Classes de cette année ({effectifClasses} élève(s))</h2>
 
-        {annee.classes.length === 0 ? (
+        {ecart && (
+          <p className={styles.errorMsg}>
+            Attention : {annee.nb_eleves_total} inscription(s) pour {effectifClasses} élève(s) comptés dans les classes.
+          </p>
+        )}
+
+        {classes.length === 0 ? (
           <p className={styles.emptyMsg}>Aucune classe créée pour cette année scolaire.</p>
         ) : (
           <div className={styles.classesList}>
-            {annee.classes.map((classe) => (
+            {classes.map((classe) => (
               <div
                 key={classe.id}
                 className={styles.classeRow}
