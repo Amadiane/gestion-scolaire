@@ -1,10 +1,3 @@
-// import { defineConfig } from 'vite'
-// import react from '@vitejs/plugin-react'
-
-// // https://vite.dev/config/
-// export default defineConfig({
-//   plugins: [react()],
-// })
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -13,9 +6,12 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'prompt',
-      // includeAssets: ['images/login-hero.webp', 'icons/apple-touch-icon.png'],
-      includeAssets: ['images/login-hero.webp', 'images/logo-sylium.png', 'favicon.ico', 'favicon-32.png', 'favicon-48.png', 'icons/apple-touch-icon.png'],
+      // La nouvelle version s'active seule : plus de risque de rester sur une ancienne.
+      registerType: 'autoUpdate',
+      includeAssets: [
+        'images/login-hero.webp', 'images/logo-sylium.png', 'favicon.ico',
+        'favicon-32.png', 'favicon-48.png', 'icons/apple-touch-icon.png',
+      ],
       manifest: {
         name: 'Sylium Gestion Scolaire',
         short_name: 'Sylium',
@@ -37,6 +33,8 @@ export default defineConfig({
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//],
         cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
     }),
