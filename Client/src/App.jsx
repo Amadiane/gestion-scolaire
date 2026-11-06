@@ -23,6 +23,7 @@ import EnseignantLayout from './layouts/EnseignantLayout.jsx';
 import DashboardEnseignant from './pages/enseignant/DashboardEnseignant.jsx';
 import MesClasses from './pages/enseignant/MesClasses.jsx';
 import NotesEnseignant from './pages/enseignant/NotesEnseignant.jsx';
+import CartePerdue from './pages/public/CartePerdue.jsx';
 import Sylium from './pages/sylium/Sylium.jsx';
 
 const ROLES_ADMIN = ['directeur', 'secretaire', 'comptable', 'surveillant'];
@@ -55,6 +56,15 @@ const PrivateRoute = ({ children, roles, superuser }) => {
   }
   return children;
 };
+// Lien du QR code : connecté, on ouvre la fiche ; sinon, page publique « carte perdue ».
+const AccesCarte = () => {
+  if (!localStorage.getItem('access')) return <CartePerdue />;
+  return (
+    <PrivateRoute roles={ROLES_ADMIN}>
+      <ScanCarte />
+    </PrivateRoute>
+  );
+};
 
 function App() {
   return (
@@ -63,14 +73,7 @@ function App() {
       <Route path="/changer-mot-de-passe" element={<ChangerMotDePasse />} />
 
       {/* Lien contenu dans le QR code des cartes : retrouve la personne et ouvre sa fiche. */}
-      <Route
-        path="/carte/:matricule"
-        element={
-          <PrivateRoute roles={ROLES_ADMIN}>
-            <ScanCarte />
-          </PrivateRoute>
-        }
-      />
+      <Route path="/carte/:matricule" element={<AccesCarte />} />
 
       <Route
         path="/sylium"

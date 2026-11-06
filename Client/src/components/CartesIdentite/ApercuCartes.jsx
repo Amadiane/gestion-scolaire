@@ -5,12 +5,23 @@ import { X, Printer } from 'lucide-react';
 import styles from '../../theme/components/CartesIdentite.module.css';
 
 // Le QR code contient un lien vers l'application : l'appareil photo d'un téléphone
-// l'ouvre directement. La page n'affiche rien sans connexion préalable.
+// l'ouvre directement. Sans connexion, la page n'affiche que le nom et le téléphone de l'école.
 const lienCarte = (matricule) => `${window.location.origin}/carte/${encodeURIComponent(matricule)}`;
 
-const ApercuCartes = ({ cartes, ecoleNom, onClose }) => {
+// Téléphone de l'école : fourni par la page appelante, sinon lu dans la session.
+const telephoneEcole = (ecoleTel) => {
+  if (ecoleTel !== undefined) return ecoleTel;
+  try {
+    return JSON.parse(localStorage.getItem('user') || '{}').ecole_telephone || '';
+  } catch {
+    return '';
+  }
+};
+
+const ApercuCartes = ({ cartes, ecoleNom, ecoleTel, onClose }) => {
   const [qr, setQr] = useState({});
   const ecole = ecoleNom || 'Établissement';
+  const telEcole = telephoneEcole(ecoleTel);
 
   useEffect(() => {
     let annule = false;
@@ -73,6 +84,10 @@ const ApercuCartes = ({ cartes, ecoleNom, onClose }) => {
 
               {qr[c.cle] && <img className={styles.qr} src={qr[c.cle]} alt="" />}
             </div>
+
+            <p className={styles.pied}>
+              Si trouvée, merci de rapporter à l'école{telEcole ? ` · ${telEcole}` : ''}
+            </p>
           </article>
         ))}
       </div>

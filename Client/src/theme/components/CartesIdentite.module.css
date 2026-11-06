@@ -124,3 +124,17 @@
 @media (max-width: 640px) {
   .feuille { grid-template-columns: 85.6mm; padding: 12px 0; }
 }
+
+.carte { position: relative; }
+
+.pied {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 1.2mm;
+  margin: 0;
+  text-align: center;
+  font-size: 5pt;
+  color: #555;
+}
+
