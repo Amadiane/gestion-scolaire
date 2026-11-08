@@ -56,6 +56,12 @@ const CONFIG = {
 
   API_PERSONNEL: `${BASE_URL}/api/personnel/`,
 
+  API_PRESENCES: `${BASE_URL}/api/presences/`,
+  API_PRESENCES_ELEVE: (id) => `${BASE_URL}/api/presences/eleve/${id}/`,
+  API_PRESENCES_PERSONNEL: `${BASE_URL}/api/presences-personnel/`,
+
+  API_PRESENCES_RAPPORT: `${BASE_URL}/api/presences/rapport/`,
+
   CLOUDINARY_NAME: "kdcjs7fx",
 };
 

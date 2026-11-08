@@ -80,3 +80,65 @@ class MembrePersonnel(models.Model):
                 super().save(*args, **kwargs)
             return
         super().save(*args, **kwargs)
+
+
+class StatutPresence(models.TextChoices):
+    PRESENT = "present", "Présent"
+    ABSENT = "absent", "Absent"
+    RETARD = "retard", "En retard"
+    EXCUSE = "excuse", "Excusé"
+
+
+class PresenceEleve(models.Model):
+    """Appel du jour : une seule ligne par élève et par date."""
+
+    ecole = models.ForeignKey(School, on_delete=models.CASCADE, related_name="presences_eleves")
+    eleve = models.ForeignKey("eleves.Eleve", on_delete=models.CASCADE, related_name="presences")
+    classe = models.ForeignKey("academique.Classe", on_delete=models.CASCADE, related_name="presences")
+    annee_scolaire = models.ForeignKey(
+        "academique.AnneeScolaire", on_delete=models.CASCADE, related_name="presences"
+    )
+    date = models.DateField()
+    statut = models.CharField(max_length=10, choices=StatutPresence.choices)
+    remarque = models.CharField(max_length=200, blank=True)
+    enregistre_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="presences_enregistrees",
+    )
+    modifie_le = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Présence élève"
+        verbose_name_plural = "Présences élèves"
+        ordering = ["-date", "eleve__nom"]
+        constraints = [
+            models.UniqueConstraint(fields=["eleve", "date"], name="presence_unique_eleve_jour")
+        ]
+        indexes = [models.Index(fields=["ecole", "classe", "date"])]
+
+    def __str__(self):
+        return f"{self.eleve} — {self.date} : {self.get_statut_display()}"
+
+
+class PresencePersonnel(models.Model):
+    ecole = models.ForeignKey(School, on_delete=models.CASCADE, related_name="presences_personnel")
+    membre = models.ForeignKey(MembrePersonnel, on_delete=models.CASCADE, related_name="presences")
+    date = models.DateField()
+    statut = models.CharField(max_length=10, choices=StatutPresence.choices)
+    remarque = models.CharField(max_length=200, blank=True)
+    enregistre_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="presences_personnel_enregistrees",
+    )
+    modifie_le = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Présence personnel"
+        verbose_name_plural = "Présences personnel"
+        ordering = ["-date", "membre__nom"]
+        constraints = [
+            models.UniqueConstraint(fields=["membre", "date"], name="presence_unique_membre_jour")
+        ]
+
+    def __str__(self):
+        return f"{self.membre} — {self.date} : {self.get_statut_display()}"

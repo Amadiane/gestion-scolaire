@@ -9,10 +9,13 @@ const utilisateur = () => localStorage.getItem('compte_local');
 const sansSlash = (u) => String(u).replace(/\/$/, '');
 
 // Ordre d'envoi : les élèves d'abord, puis les paiements, puis les notes.
+// Ordre d'envoi : les élèves d'abord, puis les paiements, les notes et les présences.
 const TYPES = [
   { type: 'eleve', url: () => `${sansSlash(CONFIG.API_ELEVES)}/synchroniser/`, lot: 10 },
   { type: 'paiement', url: () => `${sansSlash(CONFIG.API_PAIEMENTS)}/synchroniser/`, lot: 100 },
   { type: 'note', url: () => `${sansSlash(CONFIG.API_NOTES)}/synchroniser/`, lot: 200 },
+  { type: 'presence', url: () => `${sansSlash(CONFIG.API_PRESENCES)}/synchroniser/`, lot: 200 },
+  { type: 'presence_personnel', url: () => `${sansSlash(CONFIG.API_PRESENCES_PERSONNEL)}/synchroniser/`, lot: 200 },
 ];
 
 // Ajoute (ou remplace) une opération. Le contenu est chiffré avec la clé de la session.

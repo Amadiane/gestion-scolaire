@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, School, KeyRound, LogOut, X } from 'lucide-react';
+import { LayoutDashboard, BookOpen, School, ClipboardCheck, KeyRound, LogOut, X } from 'lucide-react';
 import styles from '../../theme/components/SidebarEnseignant.module.css';
 
 const NAV_ITEMS = [
   { to: '/enseignant', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
   { to: '/enseignant/mes-classes', label: 'Mes classes', icon: School },
   { to: '/enseignant/notes', label: 'Saisir des notes', icon: BookOpen },
+  { to: '/enseignant/presences', label: 'Faire l\'appel', icon: ClipboardCheck },
 ];
 
 const SidebarEnseignant = ({ isOpen, onClose }) => {

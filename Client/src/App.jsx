@@ -25,6 +25,9 @@ import MesClasses from './pages/enseignant/MesClasses.jsx';
 import NotesEnseignant from './pages/enseignant/NotesEnseignant.jsx';
 import CartePerdue from './pages/public/CartePerdue.jsx';
 import MonEcole from './pages/admin/MonEcole.jsx';
+import AppelClasse from './pages/presences/AppelClasse.jsx';
+import PresencesPersonnel from './pages/presences/PresencesPersonnel.jsx';
+import RapportPresences from './pages/presences/RapportPresences.jsx';
 import Sylium from './pages/sylium/Sylium.jsx';
 
 const ROLES_ADMIN = ['directeur', 'secretaire', 'comptable', 'surveillant'];
@@ -111,6 +114,9 @@ function App() {
         <Route path="annees-scolaires/:id" element={<FicheAnneeScolaire />} />
         <Route path="utilisateurs" element={<Utilisateurs />} />
         <Route path="affectations" element={<Affectations />} />
+        <Route path="presences" element={<AppelClasse />} />
+        <Route path="presences-personnel" element={<PresencesPersonnel />} />
+        <Route path="presences-suivi" element={<RapportPresences />} />
       </Route>
 
       <Route
@@ -124,6 +130,7 @@ function App() {
         <Route index element={<DashboardEnseignant />} />
         <Route path="mes-classes" element={<MesClasses />} />
         <Route path="notes" element={<NotesEnseignant />} />
+        <Route path="presences" element={<AppelClasse />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/login" replace />} />

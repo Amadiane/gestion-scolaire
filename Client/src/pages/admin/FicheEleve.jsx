@@ -4,6 +4,7 @@ import { ArrowLeft, FileText, Download } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
 import SituationFinanciere from './SituationFinanciere.jsx';
+import AssiduiteEleve from '../../components/Presences/AssiduiteEleve.jsx';
 import styles from '../../theme/pages/admin/FicheEleve.module.css';
 
 const TRIMESTRE_LABEL = { t1: '1er trimestre', t2: '2ème trimestre', t3: '3ème trimestre' };
@@ -187,6 +188,11 @@ const FicheEleve = () => {
         </div>
 
         <SituationFinanciere eleveId={id} />
+
+        {/* Masquée d'elle-même si l'assiduité n'est pas accessible (comptable, hors ligne). */}
+        <div className={styles.card}>
+          <AssiduiteEleve eleveId={id} />
+        </div>
       </div>
     </div>
   );

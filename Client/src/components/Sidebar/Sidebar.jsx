@@ -2,8 +2,8 @@
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Users, School, BookOpen, FileText, UserCog,
-  Calendar, Wallet, ShieldCheck, ClipboardList, Briefcase, CreditCard,
-  Building2, KeyRound, LogOut, X,
+  Calendar, CalendarDays, Wallet, ShieldCheck, ClipboardList, Briefcase, CreditCard,
+  Building2, ClipboardCheck, UserCheck, KeyRound, LogOut, X,
 } from 'lucide-react';
 import styles from '../../theme/components/Sidebar.module.css';
 
@@ -15,6 +15,9 @@ const NAV_ITEMS = [
   { to: '/dashboardAdmin/parents', label: 'Parents', icon: UserCog },
   { to: '/dashboardAdmin/personnel', label: 'Personnel', icon: Briefcase, roles: ['directeur'] },
   { to: '/dashboardAdmin/classes', label: 'Classes', icon: School },
+  { to: '/dashboardAdmin/presences', label: 'Présences élèves', icon: ClipboardCheck, roles: ['directeur', 'secretaire', 'surveillant'] },
+  { to: '/dashboardAdmin/presences-suivi', label: 'Suivi des présences', icon: CalendarDays, roles: ['directeur', 'secretaire', 'surveillant'] },
+  { to: '/dashboardAdmin/presences-personnel', label: 'Présences personnel', icon: UserCheck, roles: ['directeur'] },
   { to: '/dashboardAdmin/notes', label: 'Notes', icon: BookOpen },
   { to: '/dashboardAdmin/bulletins', label: 'Bulletins', icon: FileText },
   { to: '/dashboardAdmin/cartes', label: 'Cartes', icon: CreditCard, roles: ['directeur', 'secretaire'] },
