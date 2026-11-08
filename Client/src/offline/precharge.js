@@ -3,11 +3,14 @@ import CONFIG from '../config/config.js';
 
 // Listes à mémoriser dès la connexion. Seules les clés qui existent dans config.js
 // sont utilisées : ajoutez ou retirez des noms selon votre fichier.
+// Une liste refusée pour un rôle (403) est simplement ignorée : par exemple le personnel
+// n'est lisible que par la direction.
 const CLES = [
   'API_DASHBOARD', 'API_ELEVES', 'API_PARENTS', 'API_CLASSES', 'API_ANNEES_SCOLAIRES',
   'API_PARENTS_CHOIX', 'API_NIVEAUX', 'API_MATIERES', 'API_NOTES', 'API_BULLETINS',
   'API_AFFECTATIONS', 'API_MES_AFFECTATIONS', 'API_FRAIS', 'API_PAIEMENTS',
   'API_FINANCE_ARRIERES',
+  'API_PERSONNEL',
 ];
 
 export async function prechargerDonnees() {

@@ -19,7 +19,11 @@ const CartePerdue = () => {
     const controleur = new AbortController();
     (async () => {
       try {
-        const res = await fetch(urlPublique(matricule), { signal: controleur.signal });
+        // no-store : on ne réutilise jamais une ancienne réponse (téléphone modifié entre-temps).
+        const res = await fetch(urlPublique(matricule), {
+          signal: controleur.signal,
+          cache: 'no-store',
+        });
         if (res.ok) {
           const data = await res.json();
           setEcole(data.ecole || null);
@@ -52,8 +56,8 @@ const CartePerdue = () => {
             <h1 className={styles.ecole}>{ecole || 'Établissement scolaire'}</h1>
 
             <p className={styles.texte}>
-            Cette carte est une carte d'identité scolaire de cet établissement.
-            Si vous l'avez trouvée, merci de la rapporter au secrétariat.
+              Cette carte est une carte d'identité scolaire de cet établissement.
+              Si vous l'avez trouvée, merci de la rapporter au secrétariat.
             </p>
 
             {telephone ? (

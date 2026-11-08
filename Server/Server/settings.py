@@ -101,6 +101,8 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_THROTTLE_RATES": {"login": "20/min"},
 }
+if not DEBUG:
+    REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"] = ["rest_framework.renderers.JSONRenderer"]
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STORAGES = {

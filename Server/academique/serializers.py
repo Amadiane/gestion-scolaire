@@ -68,6 +68,24 @@ class ClasseSerializer(MemeEcoleMixin, serializers.ModelSerializer):
         fields = ["id", "ecole", "annee_scolaire", "niveau", "nom", "effectif_max", "matieres"]
         read_only_fields = ["ecole"]
 
+    def validate_nom(self, valeur):
+        return valeur.strip()
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)  # références de la même école
+        ecole = self.context["request"].user.ecole
+        nom = attrs.get("nom", getattr(self.instance, "nom", None))
+        annee = attrs.get("annee_scolaire", getattr(self.instance, "annee_scolaire", None))
+        if ecole and nom and annee:
+            doublon = Classe.objects.filter(ecole=ecole, annee_scolaire=annee, nom__iexact=nom)
+            if self.instance:
+                doublon = doublon.exclude(pk=self.instance.pk)
+            if doublon.exists():
+                raise serializers.ValidationError(
+                    {"nom": "Une classe porte déjà ce nom pour cette année scolaire."}
+                )
+        return attrs
+
 
 class ClasseAvecEffectifSerializer(serializers.ModelSerializer):
     effectif = serializers.SerializerMethodField()
