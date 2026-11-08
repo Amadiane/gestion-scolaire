@@ -62,6 +62,9 @@ const CONFIG = {
 
   API_PRESENCES_RAPPORT: `${BASE_URL}/api/presences/rapport/`,
 
+  API_TABLEAU_PRESENCES: `${BASE_URL}/api/tableau/presences/`,
+  API_TABLEAU_FINANCE: `${BASE_URL}/api/tableau/finance/`,
+
   CLOUDINARY_NAME: "kdcjs7fx",
 };
 

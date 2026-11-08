@@ -1,0 +1,117 @@
+/* ---------- Structure ---------- */
+.section { container-type: inline-size; margin: 20px 0 10px; }
+.titreSection { margin: 0 0 12px; font-size: 1.15rem; }
+
+/* ---------- Barre de période ---------- */
+.barre { display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr); margin-bottom: 14px; }
+.types { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.typeBtn, .navBtn {
+  min-height: 40px; padding: 0 10px; border-radius: 12px; cursor: pointer; font: inherit; font-size: 0.88rem;
+  border: 1px solid rgba(127, 127, 127, 0.35); background: transparent; color: inherit;
+}
+.typeBtn:disabled, .navBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+.actif { background: #1f9d6b; border-color: #1f9d6b; color: #fff; }
+.navigation { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 8px; align-items: center; }
+.libelle { text-align: center; font-weight: 600; font-size: 0.95rem; }
+.libelle::first-letter { text-transform: uppercase; }
+.champ {
+  width: 100%; min-height: 40px; padding: 0 12px; border-radius: 12px; font: inherit;
+  border: 1px solid rgba(127, 127, 127, 0.35); background: transparent; color: inherit;
+}
+
+/* ---------- Indicateurs ---------- */
+.kpis { display: grid; gap: 10px; margin: 0 0 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.kpis > .kpi:first-child { grid-column: 1 / -1; }
+.kpi {
+  padding: 12px 14px; border-radius: 14px; background: rgba(127, 127, 127, 0.06);
+  border: 1px solid rgba(127, 127, 127, 0.18); border-left: 4px solid #1f9d6b; min-width: 0;
+}
+.kpi:nth-child(3) { border-left-color: #d64550; }
+.kpi:nth-child(4) { border-left-color: #e0912f; }
+.kpi:nth-child(5) { border-left-color: #4a7bd0; }
+.kpiValeur { display: block; font-size: clamp(1.35rem, 5cqw, 1.8rem); font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.kpiLabel { display: block; font-size: 0.78rem; color: var(--color-text-dim, #6b7280); margin-top: 2px; }
+.hausse { display: block; margin-top: 4px; color: #1f9d6b; font-size: 0.76rem; font-weight: 600; }
+.baisse { display: block; margin-top: 4px; color: #d64550; font-size: 0.76rem; font-weight: 600; }
+
+/* ---------- Grilles de cartes ---------- */
+.principale, .grilleAuto { display: grid; gap: 12px; margin-bottom: 12px; align-items: stretch; grid-template-columns: minmax(0, 1fr); }
+
+.carte {
+  display: flex; flex-direction: column; min-width: 0; padding: 16px; border-radius: 16px;
+  background: rgba(127, 127, 127, 0.04); border: 1px solid rgba(127, 127, 127, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+.carteEntete { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
+.carteTitre { margin: 0; font-size: 0.95rem; font-weight: 600; }
+.bascule { display: inline-flex; padding: 3px; gap: 2px; border-radius: 999px; background: rgba(127, 127, 127, 0.14); }
+.basculeBtn {
+  min-height: 28px; padding: 0 12px; border-radius: 999px; border: 0; cursor: pointer;
+  font: inherit; font-size: 0.75rem; background: transparent; color: inherit;
+}
+.basculeBtn.actif { background: #1f9d6b; color: #fff; }
+
+/* ---------- Diagrammes ---------- */
+.zoneGraphique { flex: 1; min-width: 0; display: flex; align-items: center; }
+.svg { display: block; width: 100%; height: auto; overflow: visible; }
+.grilleLigne { stroke: rgba(127, 127, 127, 0.25); stroke-width: 1; }
+.axe { fill: currentColor; opacity: 0.65; font-size: 11px; }
+
+.anneauZone { flex: 1; display: flex; flex-wrap: wrap; gap: 14px 20px; align-items: center; justify-content: center; }
+.anneau { width: clamp(140px, 40vw, 180px); height: auto; }
+.anneauCentre { fill: currentColor; font-size: 24px; font-weight: 700; text-anchor: middle; }
+.legende { display: flex; flex-direction: column; gap: 7px; font-size: 0.85rem; }
+.legende i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 8px; }
+
+.hbars { display: flex; flex-direction: column; gap: 10px; }
+.hrow { display: grid; grid-template-columns: minmax(64px, 110px) 1fr 48px; gap: 8px; align-items: center; font-size: 0.84rem; }
+.cliquable { cursor: pointer; }
+.cliquable:hover .hlabel { text-decoration: underline; }
+.hlabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.htrack { height: 12px; border-radius: 6px; background: rgba(127, 127, 127, 0.18); overflow: hidden; }
+.hfill { height: 100%; border-radius: 6px; transition: width 0.3s ease; }
+.hval { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+
+/* ---------- Classement des absents (numérotation automatique) ---------- */
+.top { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; counter-reset: rang; }
+.top li {
+  counter-increment: rang; display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 10px; align-items: center;
+  padding: 8px 10px; border-radius: 12px; border: 1px solid rgba(127, 127, 127, 0.2); cursor: pointer; font-size: 0.88rem;
+}
+.top li:hover { background: rgba(127, 127, 127, 0.1); }
+.top li::before {
+  content: counter(rang); display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%;
+  background: rgba(214, 69, 80, 0.18); color: #d64550; font-size: 0.78rem; font-weight: 700;
+}
+.sous { font-size: 0.75rem; color: var(--color-text-dim, #6b7280); }
+.etat { color: var(--color-text-dim, #6b7280); margin: 8px 0; }
+.erreur { margin: 8px 0; padding: 10px 12px; border-radius: 10px; background: rgba(220, 53, 69, 0.14); }
+
+/* ---------- Écran moyen (>= 620 px) ---------- */
+@container (min-width: 620px) {
+  .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* ---------- Écran moyen large (>= 760 px) : cartes secondaires sur 2 colonnes ---------- */
+@container (min-width: 760px) {
+  .grilleAuto { grid-template-columns: repeat(var(--c-moyen, 2), minmax(0, 1fr)); }
+}
+/* Une carte seule sur sa dernière rangée prend toute la largeur. */
+@container (min-width: 760px) and (max-width: 1099px) {
+  .grilleAuto > .carte:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+
+/* ---------- Grand écran (>= 900 px) ---------- */
+@container (min-width: 900px) {
+  .barre { grid-template-columns: auto minmax(240px, 1fr) 220px; align-items: center; }
+  .types { grid-template-columns: repeat(4, auto); }
+  .kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .kpis > .kpi:first-child { grid-column: auto; }
+  /* Rangées principales : grande carte à gauche, petite à droite. */
+  .principale { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+}
+
+/* ---------- Très grand écran (>= 1100 px) ---------- */
+@container (min-width: 1100px) {
+  .grilleAuto { grid-template-columns: repeat(var(--c-large, 3), minmax(0, 1fr)); }
+}

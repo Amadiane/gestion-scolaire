@@ -1,0 +1,34 @@
+/* Zone des chiffres clés : la mise en page suit la largeur disponible (et non l'écran). */
+.zone { container-type: inline-size; margin-bottom: 6px; }
+
+.grille.grille {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.grille.grille > div {
+  min-width: 0;
+  padding: 14px 16px;
+  align-items: center;
+  gap: 12px;
+}
+.grille.grille > div > div:first-child { flex: none; width: 42px; height: 42px; }
+.grille.grille > div > div:last-child { min-width: 0; }
+.grille.grille span:first-child {
+  display: block;
+  font-size: clamp(1.05rem, 1.5cqw, 1.45rem);
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.grille.grille span:last-child { display: block; font-size: 0.76rem; line-height: 1.25; }
+
+/* Écran moyen : 3 colonnes (6 cartes = 2 lignes de 3) ou 2 colonnes selon le nombre de cartes. */
+@container (min-width: 640px) {
+  .grille.grille { grid-template-columns: repeat(var(--c-moyen, 3), minmax(0, 1fr)); }
+}
+
+/* Grand écran : tout sur une seule ligne. */
+@container (min-width: 1280px) {
+  .grille.grille { grid-template-columns: repeat(var(--n, 6), minmax(0, 1fr)); }
+}

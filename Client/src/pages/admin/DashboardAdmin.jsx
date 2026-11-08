@@ -4,7 +4,9 @@ import { Users, School, UserCog, BookOpen, Wallet, AlertCircle, AlertTriangle } 
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
 import { formatGNF } from '../../utils/finance.js';
+import TableauAnalyses from '../../components/Graphiques/TableauAnalyses.jsx';
 import styles from '../../theme/pages/admin/DashboardAdmin.module.css';
+import grille from '../../theme/pages/admin/DashboardAdminGrille.module.css';
 
 const TRIMESTRE = { t1: '1er trim.', t2: '2ème trim.', t3: '3ème trim.' };
 
@@ -79,25 +81,33 @@ const DashboardAdmin = () => {
             </div>
           )}
 
-          <div className={styles.statsGrid}>
-            {cartes.map(({ label, value, icon: Icon, vers }) => (
-              <div
-                key={label}
-                className={styles.statCard}
-                style={{ cursor: 'pointer' }}
-                role="link"
-                tabIndex={0}
-                onClick={ouvrir(vers)}
-                onKeyDown={ouvrir(vers)}
-              >
-                <div className={styles.statIcon}><Icon size={20} color="#fff" /></div>
-                <div>
-                  <span className={styles.statValue}>{value}</span>
-                  <span className={styles.statLabel}>{label}</span>
+          {/* Une seule ligne sur grand écran, 3 + 3 (ou 2 + 2…) sur écran moyen, 2 colonnes sur téléphone. */}
+          <div className={grille.zone}>
+            <div
+              className={`${styles.statsGrid} ${grille.grille}`}
+              style={{ '--n': cartes.length, '--c-moyen': cartes.length % 3 === 0 ? 3 : 2 }}
+            >
+              {cartes.map(({ label, value, icon: Icon, vers }) => (
+                <div
+                  key={label}
+                  className={styles.statCard}
+                  style={{ cursor: 'pointer' }}
+                  role="link"
+                  tabIndex={0}
+                  onClick={ouvrir(vers)}
+                  onKeyDown={ouvrir(vers)}
+                >
+                  <div className={styles.statIcon}><Icon size={20} color="#fff" /></div>
+                  <div>
+                    <span className={styles.statValue}>{value}</span>
+                    <span className={styles.statLabel}>{label}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
+
+          <TableauAnalyses role={user.role} />
 
           <div className={styles.twoCols}>
             <div className={styles.card}>

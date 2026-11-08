@@ -8,6 +8,7 @@ from .presences import (
 )
 from .public import carte_publique
 from .views import PersonnelViewSet
+from .tableau import tableau_finance, tableau_presences
 
 router = DefaultRouter()
 router.register(r"personnel", PersonnelViewSet, basename="personnel")
@@ -22,4 +23,6 @@ urlpatterns = [
     path("presences-personnel/", presences_personnel_du_jour),
     path("presences-personnel/synchroniser/", synchroniser_presences_personnel),
     path("presences/rapport/", rapport_presences),
+    path("tableau/presences/", tableau_presences),
+    path("tableau/finance/", tableau_finance),
 ] + router.urls
