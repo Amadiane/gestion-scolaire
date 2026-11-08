@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, WifiOff } from 'lucide-react';
+import { X, WifiOff, AlertTriangle } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
@@ -11,11 +11,17 @@ import styles from '../../theme/pages/admin/AjouterEleveModal.module.css';
 // Date locale (et non UTC) : un encaissement du soir ne doit pas passer au lendemain.
 const aujourdhui = () => new Date().toLocaleDateString('en-CA');
 
+// Sans accents ni majuscules : « Aïssatou » se trouve en tapant « aissatou ».
+const norm = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+const MAX_RESULTATS = 30;
+
 // onSuccess(paiement) : paiement enregistré en ligne.
 // onEnAttente() : paiement rangé sur l'appareil (sans réseau). Si absent, la fenêtre se ferme simplement.
 const PaiementModal = ({ eleveInitial, onClose, onSuccess, onEnAttente }) => {
   const enLigne = useOnlineStatus();
   const [eleves, setEleves] = useState([]);
+  const [listeChargee, setListeChargee] = useState(false);
   const [recherche, setRecherche] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -30,7 +36,10 @@ const PaiementModal = ({ eleveInitial, onClose, onSuccess, onEnAttente }) => {
   useEffect(() => {
     if (eleveInitial) return;
     api.get(CONFIG.API_ELEVES)
-      .then((res) => setEleves(res.data))
+      .then((res) => {
+        setEleves(res.data);
+        setListeChargee(true);
+      })
       .catch(() => setError('Impossible de charger la liste des élèves.'));
   }, [eleveInitial]);
 
@@ -39,14 +48,24 @@ const PaiementModal = ({ eleveInitial, onClose, onSuccess, onEnAttente }) => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const filtres = eleves
-    .filter((e) => `${e.nom} ${e.prenom} ${e.matricule}`.toLowerCase().includes(recherche.toLowerCase()))
-    .slice(0, 50);
+  // Chaque mot tapé doit se retrouver dans « prénom nom matricule », dans n'importe quel ordre.
+  const mots = norm(recherche).split(/\s+/).filter(Boolean);
+  const correspondants = eleves.filter((e) => {
+    const texte = norm(`${e.prenom} ${e.nom} ${e.matricule}`);
+    return mots.every((m) => texte.includes(m));
+  });
+  const affiches = correspondants.slice(0, MAX_RESULTATS);
+
+  const eleveChoisi = eleves.find((x) => String(x.id) === String(form.eleve));
 
   const libelleEleve = () => {
     if (eleveInitial) return eleveInitial.nom;
-    const el = eleves.find((x) => String(x.id) === String(form.eleve));
-    return el ? `${el.prenom} ${el.nom} (${el.matricule})` : '';
+    return eleveChoisi ? `${eleveChoisi.prenom} ${eleveChoisi.nom} (${eleveChoisi.matricule})` : '';
+  };
+
+  const choisirEleve = (el) => {
+    setForm((prev) => ({ ...prev, eleve: el.id }));
+    setError('');
   };
 
   // Range l'encaissement sur l'appareil et remet un reçu provisoire.
@@ -75,7 +94,7 @@ const PaiementModal = ({ eleveInitial, onClose, onSuccess, onEnAttente }) => {
     e.preventDefault();
     if (saving) return;
     if (!form.eleve) {
-      setError('Choisissez un élève.');
+      setError('Choisissez un élève dans la liste.');
       return;
     }
     setSaving(true);
@@ -119,12 +138,14 @@ const PaiementModal = ({ eleveInitial, onClose, onSuccess, onEnAttente }) => {
     }
   };
 
+  const sansClasse = eleveChoisi && !eleveChoisi.classe_actuelle_nom;
+
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
           <h2>Enregistrer un paiement</h2>
-          <button className={styles.closeButton} onClick={onClose}><X size={20} /></button>
+          <button className={styles.closeButton} onClick={onClose} aria-label="Fermer"><X size={20} /></button>
         </div>
 
         {!enLigne && (
@@ -146,27 +167,65 @@ const PaiementModal = ({ eleveInitial, onClose, onSuccess, onEnAttente }) => {
               <input value={eleveInitial.nom} disabled />
             </div>
           ) : (
-            <>
-              <div className={styles.field}>
-                <label>Rechercher un élève</label>
-                <input
-                  placeholder="Nom, prénom ou matricule..."
-                  value={recherche}
-                  onChange={(e) => setRecherche(e.target.value)}
-                />
-              </div>
-              <div className={styles.field}>
-                <label>Élève *</label>
-                <select name="eleve" value={form.eleve} onChange={handleChange} required>
-                  <option value="">— Choisir —</option>
-                  {filtres.map((el) => (
-                    <option key={el.id} value={el.id}>
-                      {el.prenom} {el.nom} ({el.matricule})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </>
+            <div className={styles.field}>
+              <label htmlFor="paiement-recherche">Élève *</label>
+              <input
+                id="paiement-recherche"
+                placeholder="Tapez un nom, un prénom ou un matricule..."
+                value={recherche}
+                onChange={(e) => setRecherche(e.target.value)}
+                autoComplete="off"
+              />
+
+              {eleveChoisi && (
+                <div className={styles.eleveChoisi}>
+                  <strong>{eleveChoisi.prenom} {eleveChoisi.nom}</strong>
+                  <span>{eleveChoisi.matricule} · {eleveChoisi.classe_actuelle_nom || 'Sans classe'}</span>
+                </div>
+              )}
+
+              {sansClasse && (
+                <div className={styles.alerteMontant} role="alert">
+                  <AlertTriangle size={13} style={{ verticalAlign: '-2px' }} /> Cet élève n'est inscrit dans
+                  aucune classe : son paiement ne comptera pas dans les arriérés tant qu'il n'est pas inscrit.
+                </div>
+              )}
+
+              {listeChargee && eleves.length === 0 && (
+                <p className={styles.aideChamp}>Aucun élève n'est enregistré. Ajoutez d'abord un élève dans « Élèves ».</p>
+              )}
+
+              {eleves.length > 0 && (
+                <>
+                  <ul className={styles.resultats} role="listbox" aria-label="Résultats de la recherche">
+                    {affiches.map((el) => (
+                      <li key={el.id}>
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={String(el.id) === String(form.eleve)}
+                          className={`${styles.resultat} ${String(el.id) === String(form.eleve) ? styles.resultatActif : ''}`}
+                          onClick={() => choisirEleve(el)}
+                        >
+                          <span>{el.prenom} {el.nom}</span>
+                          <small>
+                            {el.matricule} · {el.classe_actuelle_nom || 'Sans classe'}
+                          </small>
+                        </button>
+                      </li>
+                    ))}
+                    {affiches.length === 0 && (
+                      <li className={styles.aucunResultat}>Aucun élève ne correspond à « {recherche} ».</li>
+                    )}
+                  </ul>
+                  {correspondants.length > MAX_RESULTATS && (
+                    <p className={styles.aideChamp}>
+                      {correspondants.length} résultats : affinez la recherche pour voir les autres.
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
           )}
 
           <div className={styles.row}>

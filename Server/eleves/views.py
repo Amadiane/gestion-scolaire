@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import transaction
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -17,6 +18,9 @@ from .models import Eleve, Inscription, Parent, RelationParentEleve
 from .serializers import (
     EleveSerializer, InscriptionSerializer, ParentDetailSerializer, ParentSerializer,
 )
+
+# Mêmes rôles que l'écran Finance : seuls eux peuvent encaisser.
+ROLES_ENCAISSEMENT = ("directeur", "comptable")
 
 
 def _premier_message(erreurs):
@@ -38,6 +42,50 @@ def _photo_depuis_data_url(valeur):
     return SimpleUploadedFile("photo.jpg", contenu, content_type="image/jpeg")
 
 
+def _reference_paiement(reference):
+    """Référence du premier paiement, déduite de celle de l'élève : un rejeu ne peut pas encaisser deux fois."""
+    return uuid.uuid5(reference, "premier-paiement")
+
+
+def _infos_paiement(ecole, reference):
+    from finance.models import Paiement
+
+    paiement = Paiement.objects.filter(ecole=ecole, reference_client=_reference_paiement(reference)).first()
+    if paiement is None:
+        return {}
+    return {"paiement_id": paiement.id, "numero_recu": paiement.numero_recu}
+
+
+def _creer_premier_paiement(request, ecole, eleve, op, donnees, reference):
+    """Enregistre le premier paiement dans la même transaction que l'inscription."""
+    from academique.models import AnneeScolaire
+    from finance.serializers import PaiementSerializer
+
+    annee = AnneeScolaire.objects.filter(ecole=ecole, est_active=True).first()
+    if annee is None or str(annee.id) != str(op.get("annee_scolaire")):
+        raise ErreurOperation("Le premier paiement n'est possible que pour l'année scolaire active.")
+
+    serializer = PaiementSerializer(
+        data={
+            "eleve": eleve.id,
+            "montant": donnees.get("montant"),
+            "date_paiement": donnees.get("date_paiement") or timezone.localdate().isoformat(),
+            "mode": donnees.get("mode") or "especes",
+            "reference": str(donnees.get("reference") or "")[:100],
+            "note": str(donnees.get("note") or "")[:200],
+        },
+        context={"request": request},
+    )
+    if not serializer.is_valid():
+        raise ErreurOperation(_premier_message(serializer.errors))
+
+    paiement = serializer.save(
+        ecole=ecole, annee_scolaire=annee, enregistre_par=request.user,
+        reference_client=_reference_paiement(reference),
+    )
+    return {"paiement_id": paiement.id, "numero_recu": paiement.numero_recu}
+
+
 class ParentViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
     # Pas de queryset_enseignant : les enseignants n'accèdent pas aux
     # coordonnées des parents.
@@ -54,11 +102,8 @@ class ParentViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
         return Response(ParentDetailSerializer(self.get_object()).data)
 
 
-# class EleveViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
-#     queryset = Eleve.objects.all()
-#     serializer_class = EleveSerializer
 class EleveViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
-    queryset = Eleve.objects.order_by("matricule")   # avant : Eleve.objects.all()
+    queryset = Eleve.objects.order_by("matricule")
     serializer_class = EleveSerializer
 
     def queryset_enseignant(self, qs, user):
@@ -90,7 +135,8 @@ class EleveViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
     # ---------- Synchronisation des saisies faites hors ligne ----------
 
     def _synchroniser_une(self, request, ecole, op):
-        """Crée l'élève, son inscription et ses liens parents en un seul bloc. Idempotent."""
+        """Crée l'élève, son inscription, ses liens parents et, si demandé, son premier paiement
+        en un seul bloc. Idempotent."""
         try:
             reference = uuid.UUID(str(op.get("reference")))
         except ValueError:
@@ -98,7 +144,19 @@ class EleveViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
 
         deja = Eleve.objects.filter(ecole=ecole, reference_client=reference).first()
         if deja:
-            return {"statut": "identique", "id": deja.id, "matricule": deja.matricule}
+            return {
+                "statut": "identique", "id": deja.id, "matricule": deja.matricule,
+                **_infos_paiement(ecole, reference),
+            }
+
+        paiement_op = op.get("paiement")
+        if paiement_op:
+            if not isinstance(paiement_op, dict):
+                raise ErreurOperation("Premier paiement mal formé.")
+            if getattr(request.user, "role", None) not in ROLES_ENCAISSEMENT:
+                raise ErreurOperation("Seuls le directeur et le comptable peuvent enregistrer un paiement.")
+            if not (op.get("classe") and op.get("annee_scolaire")):
+                raise ErreurOperation("Un premier paiement nécessite que l'élève soit inscrit dans une classe.")
 
         nom = (op.get("nom") or "").strip()
         prenom = (op.get("prenom") or "").strip()
@@ -163,7 +221,11 @@ class EleveViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
                 },
             )
 
-        return {"statut": "cree", "id": eleve.id, "matricule": eleve.matricule}
+        infos = {}
+        if paiement_op:
+            infos = _creer_premier_paiement(request, ecole, eleve, op, paiement_op, reference)
+
+        return {"statut": "cree", "id": eleve.id, "matricule": eleve.matricule, **infos}
 
     @action(detail=False, methods=["post"], url_path="synchroniser")
     def synchroniser(self, request):
