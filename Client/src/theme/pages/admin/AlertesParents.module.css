@@ -58,3 +58,7 @@
 .montant { font-size: .9rem; color: #0f172a; }
 .montant b { color: #b91c1c; }
 .montant small { color: #64748b; }
+
+.contacts { display: grid; gap: 8px; margin-top: 4px; }
+.contact { display: grid; gap: 4px; border-left: 3px solid #e2e8f0; padding-left: 8px; }
+.contactTel { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: .88rem; }

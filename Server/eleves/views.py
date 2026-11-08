@@ -30,6 +30,14 @@ def _premier_message(erreurs):
     return str(premier)
 
 
+def _vrai(valeur):
+    return valeur is True or str(valeur).lower() in ("true", "1", "oui")
+
+
+def _acces_refuse():
+    return Response({"detail": "Accès refusé."}, status=403)
+
+
 class ErreurOperation(Exception):
     """Fait échouer (et annuler) une opération de synchronisation avec un message lisible."""
 
@@ -115,22 +123,97 @@ class EleveViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
             raise ValidationError("Impossible de créer un élève : aucune école n'est associée à ce compte.")
         serializer.save(ecole=ecole)
 
+    # ---------- Parents d'un élève (plusieurs possibles) ----------
+
+    @action(detail=True, methods=["get"], url_path="parents")
+    def parents_liste(self, request, pk=None):
+        eleve = self.get_object()
+        if est_enseignant(request.user):
+            return _acces_refuse()
+        liens = (
+            RelationParentEleve.objects.filter(eleve=eleve)
+            .select_related("parent").order_by("-contact_principal", "id")
+        )
+        return Response([
+            {
+                "relation_id": r.id,
+                "type_lien": r.type_lien,
+                "type_lien_label": r.get_type_lien_display(),
+                "contact_principal": r.contact_principal,
+                "parent": ParentSerializer(r.parent).data,
+            }
+            for r in liens
+        ])
+
     @action(detail=True, methods=["post"])
     def lier_parent(self, request, pk=None):
         eleve = self.get_object()
+        if est_enseignant(request.user):
+            return _acces_refuse()
         parent_id = request.data.get("parent")
         if not parent_id:
             return Response({"detail": "Le champ 'parent' est requis."}, status=400)
         # Le parent doit appartenir à la même école que l'élève.
         parent = get_object_or_404(Parent, pk=parent_id, ecole=eleve.ecole)
-        relation, created = RelationParentEleve.objects.get_or_create(
-            eleve=eleve, parent=parent,
-            defaults={
-                "type_lien": request.data.get("type_lien", "autre"),
-                "contact_principal": request.data.get("contact_principal", False),
-            },
-        )
+
+        type_lien = request.data.get("type_lien", "autre")
+        if type_lien not in RelationParentEleve.TypeLien.values:
+            type_lien = "autre"
+        principal = _vrai(request.data.get("contact_principal", False))
+
+        with transaction.atomic():
+            a_deja_un_principal = RelationParentEleve.objects.filter(
+                eleve=eleve, contact_principal=True
+            ).exists()
+            relation, created = RelationParentEleve.objects.get_or_create(
+                eleve=eleve, parent=parent,
+                # Le premier parent d'un élève devient automatiquement le contact principal.
+                defaults={"type_lien": type_lien, "contact_principal": principal or not a_deja_un_principal},
+            )
+            if created and principal:
+                RelationParentEleve.objects.filter(eleve=eleve).exclude(pk=relation.pk).update(
+                    contact_principal=False
+                )
         return Response({"id": relation.id, "created": created}, status=201 if created else 200)
+
+    @action(detail=True, methods=["post"])
+    def modifier_lien(self, request, pk=None):
+        eleve = self.get_object()
+        if est_enseignant(request.user):
+            return _acces_refuse()
+        relation = get_object_or_404(
+            RelationParentEleve, eleve=eleve, parent_id=request.data.get("parent"), parent__ecole=eleve.ecole
+        )
+        with transaction.atomic():
+            type_lien = request.data.get("type_lien")
+            if type_lien in RelationParentEleve.TypeLien.values:
+                relation.type_lien = type_lien
+            if _vrai(request.data.get("contact_principal", False)):
+                RelationParentEleve.objects.filter(eleve=eleve).exclude(pk=relation.pk).update(
+                    contact_principal=False
+                )
+                relation.contact_principal = True
+            relation.save()
+        return Response({"id": relation.id})
+
+    @action(detail=True, methods=["post"])
+    def delier_parent(self, request, pk=None):
+        """Retire le lien avec l'élève ; le parent lui-même n'est pas supprimé."""
+        eleve = self.get_object()
+        if est_enseignant(request.user):
+            return _acces_refuse()
+        relation = get_object_or_404(
+            RelationParentEleve, eleve=eleve, parent_id=request.data.get("parent"), parent__ecole=eleve.ecole
+        )
+        with transaction.atomic():
+            etait_principal = relation.contact_principal
+            relation.delete()
+            if etait_principal:
+                suivant = RelationParentEleve.objects.filter(eleve=eleve).order_by("id").first()
+                if suivant:
+                    suivant.contact_principal = True
+                    suivant.save(update_fields=["contact_principal"])
+        return Response({"retire": True})
 
     # ---------- Synchronisation des saisies faites hors ligne ----------
 
@@ -200,7 +283,10 @@ class EleveViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
                 parent = Parent.objects.filter(ecole=ecole, telephone=tel, nom__iexact=nom_p).first()
                 if parent is None:
                     ps = ParentSerializer(
-                        data={"nom": nom_p, "prenom": lien.get("nouveauPrenom") or "", "telephone": tel},
+                        data={
+                            "nom": nom_p, "prenom": lien.get("nouveauPrenom") or "", "telephone": tel,
+                            "telephone_secondaire": (lien.get("nouveauTelephone2") or "").strip(),
+                        },
                         context={"request": request},
                     )
                     if not ps.is_valid():

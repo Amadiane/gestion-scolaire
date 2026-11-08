@@ -8,14 +8,20 @@ from .models import Eleve, Inscription, Parent, RelationParentEleve
 class ParentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Parent
-        fields = ["id", "ecole", "nom", "prenom", "telephone", "email", "adresse", "date_creation"]
+        fields = [
+            "id", "ecole", "nom", "prenom", "telephone", "telephone_secondaire",
+            "email", "adresse", "date_creation",
+        ]
         read_only_fields = ["ecole", "date_creation"]
+
+    def validate_telephone_secondaire(self, valeur):
+        return (valeur or "").strip()
 
 
 class ParentChoixSerializer(serializers.ModelSerializer):
     class Meta:
         model = Parent
-        fields = ["id", "nom", "prenom", "telephone"]
+        fields = ["id", "nom", "prenom", "telephone", "telephone_secondaire"]
 
 
 class RelationParentEleveSerializer(MemeEcoleMixin, serializers.ModelSerializer):
@@ -58,7 +64,7 @@ class ParentDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Parent
         fields = [
-            "id", "ecole", "nom", "prenom", "telephone", "email",
+            "id", "ecole", "nom", "prenom", "telephone", "telephone_secondaire", "email",
             "adresse", "date_creation", "enfants",
         ]
 

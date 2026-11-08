@@ -6,7 +6,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import BasePermission, IsAuthenticated
 from rest_framework.response import Response
 
-from eleves.models import Eleve, RelationParentEleve
+from eleves.contacts import contacts_par_eleve
+from eleves.models import Eleve
 from tenants.permissions import IsSubscriptionActive
 
 from .alertes_models import AlerteParent
@@ -34,7 +35,7 @@ def _lire_date(valeur):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsSubscriptionActive, PeutAlerterParents])
 def alertes_du_jour(request):
-    """Élèves absents / en retard à une date, avec le parent à contacter."""
+    """Élèves absents / en retard à une date, avec tous leurs contacts (principal en premier)."""
     ecole = request.user.ecole
     jour = _lire_date(request.query_params.get("date"))
     if jour is None:
@@ -47,18 +48,7 @@ def alertes_du_jour(request):
         .order_by("classe__id", "eleve__nom", "eleve__prenom")
     )
     eleve_ids = [l.eleve_id for l in lignes]
-
-    # Parent à contacter : contact principal d'abord, sinon le premier lien.
-    contacts = {}
-    relations = (
-        RelationParentEleve.objects
-        .filter(eleve_id__in=eleve_ids, parent__ecole=ecole)
-        .select_related("parent")
-        .order_by("-contact_principal", "id")
-    )
-    for r in relations:
-        contacts.setdefault(r.eleve_id, r)
-
+    contacts = contacts_par_eleve(ecole, eleve_ids)
     prevenus = {
         a.eleve_id: a
         for a in AlerteParent.objects.filter(ecole=ecole, date=jour, eleve_id__in=eleve_ids)
@@ -66,7 +56,6 @@ def alertes_du_jour(request):
 
     resultats = []
     for l in lignes:
-        rel = contacts.get(l.eleve_id)
         alerte = prevenus.get(l.eleve_id)
         resultats.append({
             "eleve_id": l.eleve_id,
@@ -77,12 +66,7 @@ def alertes_du_jour(request):
             "classe": str(l.classe),
             "statut": l.statut,
             "remarque": l.remarque,
-            "parent": None if not rel else {
-                "nom": rel.parent.nom,
-                "prenom": rel.parent.prenom,
-                "telephone": rel.parent.telephone,
-                "lien": rel.get_type_lien_display(),
-            },
+            "contacts": contacts.get(l.eleve_id, []),
             "prevenu": alerte is not None,
             "prevenu_le": alerte.envoye_le if alerte else None,
         })

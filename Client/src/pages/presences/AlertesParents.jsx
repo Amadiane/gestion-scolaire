@@ -1,14 +1,15 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, MessageCircle, Phone, Check, RotateCcw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, RotateCcw } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
+import { lienWhatsApp } from '../../utils/whatsapp.js';
+import ContactsBoutons from '../../components/Contacts/ContactsBoutons.jsx';
 import styles from '../../theme/pages/admin/AlertesParents.module.css';
 
-const INDICATIF = '224'; // Guinée : ajouté aux numéros locaux de 9 chiffres
-const CLE_MODELE = 'sylium_modele_alerte';
+const CLE_MODELE = 'sylium_modele_relance_v2';
 const MODELE_DEFAUT =
-  "Bonjour {parent}, l'école {ecole} vous informe que {eleve} était {statut} le {date}. " +
-  'Merci de nous contacter si besoin.';
+  "Bonjour {parent}, {ecole} vous informe qu'il reste {reste} GNF à régler pour la scolarité de {eleve}. " +
+  "Merci de passer à l'école ou de nous contacter. Si vous avez déjà payé, veuillez ignorer ce message.";
 
 const iso = (d) => d.toLocaleDateString('en-CA');
 const decaler = (dateIso, jours) => {
@@ -21,18 +22,9 @@ const fmtDate = (v) => {
   return `${j}/${m}/${a}`;
 };
 
-const numeroWhatsApp = (tel) => {
-  let n = String(tel || '').replace(/[^\d+]/g, '');
-  if (n.startsWith('+')) n = n.slice(1);
-  else if (n.startsWith('00')) n = n.slice(2);
-  else if (n.length <= 9) n = INDICATIF + n.replace(/^0+/, '');
-  return n.replace(/\D/g, '');
-};
-
 const libelleStatut = (a) => {
-  const f = a.sexe === 'F';
   if (a.statut === 'retard') return 'en retard';
-  return f ? 'absente' : 'absent';
+  return a.sexe === 'F' ? 'absente' : 'absent';
 };
 
 const lireModele = () => {
@@ -64,7 +56,7 @@ const AlertesParents = () => {
       setDonnees({ ecole: '', alertes: [] });
       setErreur(
         err.response?.data?.detail ||
-          "Impossible de charger les alertes. Cette page demande une connexion internet."
+          'Impossible de charger les alertes. Cette page demande une connexion internet.'
       );
     } finally {
       setChargement(false);
@@ -103,9 +95,9 @@ const AlertesParents = () => {
 
   const nbPrevenus = donnees.alertes.filter((a) => a.prevenu).length;
 
-  const message = (a) =>
+  const message = (a, contact) =>
     modele
-      .replaceAll('{parent}', a.parent ? `${a.parent.prenom} ${a.parent.nom}` : '')
+      .replaceAll('{parent}', contact ? `${contact.prenom} ${contact.nom}` : '')
       .replaceAll('{eleve}', `${a.prenom} ${a.nom}`)
       .replaceAll('{statut}', libelleStatut(a))
       .replaceAll('{date}', fmtDate(date))
@@ -125,10 +117,9 @@ const AlertesParents = () => {
     }
   };
 
-  const ouvrirWhatsApp = (a) => {
+  const ouvrirWhatsApp = (a, contact, tel) => {
     // Ouverture immédiate (avant tout await) pour ne pas être bloquée par le navigateur.
-    const url = `https://wa.me/${numeroWhatsApp(a.parent.telephone)}?text=${encodeURIComponent(message(a))}`;
-    window.open(url, '_blank', 'noopener');
+    window.open(lienWhatsApp(tel, message(a, contact)), '_blank', 'noopener');
     marquer(a, true);
   };
 
@@ -137,7 +128,7 @@ const AlertesParents = () => {
       <h1 className={styles.titre}>Alertes aux parents</h1>
       <p className={styles.aide}>
         Élèves absents ou en retard à la date choisie. Le bouton WhatsApp ouvre un message déjà rédigé ;
-        l'élève est ensuite marqué « prévenu ».
+        l'élève est ensuite marqué « prévenu ». Si le premier contact ne répond pas, utilisez les autres.
       </p>
 
       <div className={styles.barre}>
@@ -217,49 +208,35 @@ const AlertesParents = () => {
       )}
 
       <ul className={styles.liste}>
-        {visibles.map((a) => {
-          const sansNumero = !a.parent || !numeroWhatsApp(a.parent.telephone);
-          return (
-            <li key={a.eleve_id} className={a.prevenu ? styles.carteFaite : styles.carte}>
-              <div className={styles.infos}>
-                <strong>{a.prenom} {a.nom}</strong>
-                <span className={styles.classe}>{a.classe}</span>
-                <span className={a.statut === 'retard' ? styles.tagRetard : styles.tagAbsent}>
-                  {a.statut === 'retard' ? 'Retard' : 'Absent'}
-                </span>
-                {a.remarque && <em className={styles.remarque}>{a.remarque}</em>}
-                <span className={styles.parent}>
-                  {a.parent
-                    ? `${a.parent.prenom} ${a.parent.nom} (${a.parent.lien}) · ${a.parent.telephone}`
-                    : 'Aucun parent enregistré'}
-                </span>
-                {a.prevenu && <span className={styles.fait}><Check size={13} /> Parent prévenu</span>}
-              </div>
+        {visibles.map((a) => (
+          <li key={a.eleve_id} className={a.prevenu ? styles.carteFaite : styles.carte}>
+            <div className={styles.infos}>
+              <strong>{a.prenom} {a.nom}</strong>
+              <span className={styles.classe}>{a.classe}</span>
+              <span className={a.statut === 'retard' ? styles.tagRetard : styles.tagAbsent}>
+                {a.statut === 'retard' ? 'Retard' : 'Absent'}
+              </span>
+              {a.remarque && <em className={styles.remarque}>{a.remarque}</em>}
+              <ContactsBoutons
+                contacts={a.contacts}
+                onWhatsApp={(contact, tel) => ouvrirWhatsApp(a, contact, tel)}
+              />
+              {a.prevenu && <span className={styles.fait}><Check size={13} /> Parent prévenu</span>}
+            </div>
 
-              <div className={styles.actions}>
-                {!sansNumero && (
-                  <>
-                    <button type="button" className={styles.btnWhats} onClick={() => ouvrirWhatsApp(a)}>
-                      <MessageCircle size={15} /> {a.prevenu ? 'Renvoyer' : 'WhatsApp'}
-                    </button>
-                    <a className={styles.btnAppel} href={`tel:${a.parent.telephone}`}>
-                      <Phone size={15} /> Appeler
-                    </a>
-                  </>
-                )}
-                {a.prevenu ? (
-                  <button type="button" className={styles.btnSecondaire} onClick={() => marquer(a, false)}>
-                    <RotateCcw size={14} /> Annuler
-                  </button>
-                ) : (
-                  <button type="button" className={styles.btnSecondaire} onClick={() => marquer(a, true)}>
-                    <Check size={14} /> Marquer prévenu
-                  </button>
-                )}
-              </div>
-            </li>
-          );
-        })}
+            <div className={styles.actions}>
+              {a.prevenu ? (
+                <button type="button" className={styles.btnSecondaire} onClick={() => marquer(a, false)}>
+                  <RotateCcw size={14} /> Annuler
+                </button>
+              ) : (
+                <button type="button" className={styles.btnSecondaire} onClick={() => marquer(a, true)}>
+                  <Check size={14} /> Marquer prévenu
+                </button>
+              )}
+            </div>
+          </li>
+        ))}
       </ul>
     </div>
   );

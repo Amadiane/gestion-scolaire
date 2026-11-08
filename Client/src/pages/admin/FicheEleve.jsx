@@ -5,6 +5,7 @@ import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
 import SituationFinanciere from './SituationFinanciere.jsx';
 import AssiduiteEleve from '../../components/Presences/AssiduiteEleve.jsx';
+import ContactsParents from '../../components/Contacts/ContactsParents.jsx';
 import styles from '../../theme/pages/admin/FicheEleve.module.css';
 
 const TRIMESTRE_LABEL = { t1: '1er trimestre', t2: '2ème trimestre', t3: '3ème trimestre' };
@@ -151,6 +152,11 @@ const FicheEleve = () => {
             <div><dt>Sexe</dt><dd>{eleve.sexe === 'M' ? 'Masculin' : eleve.sexe === 'F' ? 'Féminin' : '—'}</dd></div>
             <div><dt>Date d'inscription</dt><dd>{fmtDate(eleve.date_inscription)}</dd></div>
           </dl>
+        </div>
+
+        {/* Plusieurs parents possibles ; masquée d'elle-même pour les enseignants. */}
+        <div className={styles.card}>
+          <ContactsParents eleveId={id} />
         </div>
 
         <div className={styles.card}>

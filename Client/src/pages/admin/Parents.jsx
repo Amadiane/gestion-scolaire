@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Phone, Mail, Users, X } from 'lucide-react';
+import { Search, Plus, Phone, Mail, Users, X, Pencil } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
 import BoutonRetour from '../../components/BoutonRetour/BoutonRetour.jsx';
 import Pagination from '../../components/Pagination/Pagination.jsx';
 import usePagination from '../../hooks/usePagination.js';
+import ModifierParentModal from '../../components/Contacts/ModifierParentModal.jsx';
 import AjouterParentModal from './AjouterParentModal.jsx';
 import styles from '../../theme/pages/admin/Parents.module.css';
 import listes from '../../theme/pages/admin/Listes.module.css';
+import contacts from '../../theme/components/Contacts.module.css';
 
 const norm = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const comparer = (a, b) =>
@@ -29,6 +31,7 @@ const Parents = () => {
   const [recherche, setRecherche] = useState('');
   const [tri, setTri] = useState('nom');
   const [modalOuvert, setModalOuvert] = useState(false);
+  const [aModifier, setAModifier] = useState(null);
 
   const chargerParents = async () => {
     setLoading(true);
@@ -61,7 +64,9 @@ const Parents = () => {
         !q ||
         norm(`${p.nom} ${p.prenom} ${p.email || ''}`).includes(q) ||
         norm(p.telephone).includes(q) ||
-        (qNum.length >= 3 && chiffres(p.telephone).includes(qNum))
+        norm(p.telephone_secondaire).includes(q) ||
+        (qNum.length >= 3 &&
+          (chiffres(p.telephone).includes(qNum) || chiffres(p.telephone_secondaire).includes(qNum)))
     )
     .sort(TRIS[tri].fn);
 
@@ -138,6 +143,7 @@ const Parents = () => {
                   <h3 className={styles.name}>{parent.prenom} {parent.nom}</h3>
                   <div className={styles.contactLine}>
                     <Phone size={12} /> {parent.telephone}
+                    {parent.telephone_secondaire && <> · {parent.telephone_secondaire}</>}
                   </div>
                   {parent.email && (
                     <div className={styles.contactLine}>
@@ -145,6 +151,17 @@ const Parents = () => {
                     </div>
                   )}
                 </div>
+                <button
+                  type="button"
+                  className={contacts.crayon}
+                  aria-label={`Modifier ${parent.prenom} ${parent.nom}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setAModifier(parent);
+                  }}
+                >
+                  <Pencil size={14} />
+                </button>
               </div>
             ))}
           </div>
@@ -154,6 +171,17 @@ const Parents = () => {
 
       {modalOuvert && (
         <AjouterParentModal onClose={() => setModalOuvert(false)} onSuccess={handleSuccess} />
+      )}
+
+      {aModifier && (
+        <ModifierParentModal
+          parent={aModifier}
+          onClose={() => setAModifier(null)}
+          onSaved={() => {
+            setAModifier(null);
+            chargerParents();
+          }}
+        />
       )}
     </div>
   );

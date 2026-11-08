@@ -1,15 +1,16 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { MessageCircle, Phone, Check, RotateCcw, Search } from 'lucide-react';
+import { Check, RotateCcw, Search } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
 import { formatGNF } from '../../utils/finance.js';
-import { numeroWhatsApp, lienWhatsApp } from '../../utils/whatsapp.js';
+import { lienWhatsApp } from '../../utils/whatsapp.js';
+import ContactsBoutons from '../../components/Contacts/ContactsBoutons.jsx';
 import styles from '../../theme/pages/admin/AlertesParents.module.css';
 
 const CLE_MODELE = 'sylium_modele_relance';
 const MODELE_DEFAUT =
   "Bonjour {parent}, l'école {ecole} vous informe qu'il reste {reste} GNF à régler pour la scolarité de {eleve}. " +
-  'Merci de passer à l\'école ou de nous contacter. Si vous avez déjà payé, veuillez ignorer ce message.';
+  "Merci de passer à l'école ou de nous contacter. Si vous avez déjà payé, veuillez ignorer ce message.";
 
 const fmtDate = (v) => {
   if (!v) return '';
@@ -85,9 +86,9 @@ const RelancesPaiement = () => {
   const totalVisible = visibles.reduce((s, e) => s + e.reste, 0);
   const nbRelances = donnees.eleves.filter((e) => e.nb_relances > 0).length;
 
-  const message = (e) =>
+  const message = (e, contact) =>
     modele
-      .replaceAll('{parent}', e.parent ? `${e.parent.prenom} ${e.parent.nom}` : '')
+      .replaceAll('{parent}', contact ? `${contact.prenom} ${contact.nom}` : '')
       .replaceAll('{eleve}', `${e.prenom} ${e.nom}`)
       .replaceAll('{reste}', formatGNF(e.reste))
       .replaceAll('{ecole}', donnees.ecole);
@@ -108,9 +109,9 @@ const RelancesPaiement = () => {
     }
   };
 
-  const ouvrirWhatsApp = (e) => {
+  const ouvrirWhatsApp = (e, contact, tel) => {
     // Ouverture immédiate (avant tout await) pour ne pas être bloquée par le navigateur.
-    window.open(lienWhatsApp(e.parent.telephone, message(e)), '_blank', 'noopener');
+    window.open(lienWhatsApp(tel, message(e, contact)), '_blank', 'noopener');
     marquer(e);
   };
 
@@ -119,7 +120,8 @@ const RelancesPaiement = () => {
       <h1 className={styles.titre}>Relances de paiement</h1>
       <p className={styles.aide}>
         Élèves de l'année active qui ont un reste à payer. Le bouton WhatsApp ouvre un message déjà rédigé
-        et enregistre la relance. Aucun paiement n'est créé ni modifié ici.
+        et enregistre la relance. Si le premier contact ne répond pas, utilisez les autres. Aucun paiement
+        n'est créé ni modifié ici.
       </p>
 
       <div className={styles.barre}>
@@ -191,7 +193,6 @@ const RelancesPaiement = () => {
 
       <ul className={styles.liste}>
         {visibles.map((e) => {
-          const sansNumero = !e.parent || !numeroWhatsApp(e.parent.telephone);
           const relance = e.nb_relances > 0;
           return (
             <li key={e.eleve_id} className={relance ? styles.carteFaite : styles.carte}>
@@ -202,11 +203,10 @@ const RelancesPaiement = () => {
                   Reste : <b>{formatGNF(e.reste)} GNF</b>
                   <small> (payé {formatGNF(e.paye)} sur {formatGNF(e.a_payer)})</small>
                 </span>
-                <span className={styles.parent}>
-                  {e.parent
-                    ? `${e.parent.prenom} ${e.parent.nom} (${e.parent.lien}) · ${e.parent.telephone}`
-                    : 'Aucun parent enregistré'}
-                </span>
+                <ContactsBoutons
+                  contacts={e.contacts}
+                  onWhatsApp={(contact, tel) => ouvrirWhatsApp(e, contact, tel)}
+                />
                 {relance && (
                   <span className={styles.fait}>
                     <Check size={13} /> Relancé {e.nb_relances} fois · dernière le {fmtDate(e.derniere_relance)}
@@ -215,16 +215,6 @@ const RelancesPaiement = () => {
               </div>
 
               <div className={styles.actions}>
-                {!sansNumero && (
-                  <>
-                    <button type="button" className={styles.btnWhats} onClick={() => ouvrirWhatsApp(e)}>
-                      <MessageCircle size={15} /> {relance ? 'Relancer encore' : 'WhatsApp'}
-                    </button>
-                    <a className={styles.btnAppel} href={`tel:${e.parent.telephone}`}>
-                      <Phone size={15} /> Appeler
-                    </a>
-                  </>
-                )}
                 {relance ? (
                   <button type="button" className={styles.btnSecondaire} onClick={() => marquer(e, true)}>
                     <RotateCcw size={14} /> Annuler la dernière

@@ -2,7 +2,8 @@ from django.db.models import Count, Max
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
-from eleves.models import Eleve, Inscription, RelationParentEleve
+from eleves.contacts import contacts_par_eleve
+from eleves.models import Eleve, Inscription
 
 from .models import RelancePaiement
 from .permissions import PERMISSIONS_FINANCE
@@ -21,7 +22,7 @@ def _id_eleve(situation):
 @api_view(["GET"])
 @permission_classes(PERMISSIONS_FINANCE)
 def relances(request):
-    """Élèves avec un reste à payer, le parent à contacter et l'historique des relances."""
+    """Élèves avec un reste à payer, tous leurs contacts et l'historique des relances."""
     ecole, annee = _contexte(request)
     situations = [s for s in calculer_situations(ecole, annee) if s["reste"] > 0]
 
@@ -37,17 +38,7 @@ def relances(request):
         i.eleve_id: i.classe
         for i in Inscription.objects.filter(eleve_id__in=ids, annee_scolaire=annee).select_related("classe")
     }
-
-    contacts = {}
-    liens = (
-        RelationParentEleve.objects
-        .filter(eleve_id__in=ids, parent__ecole=ecole)
-        .select_related("parent")
-        .order_by("-contact_principal", "id")
-    )
-    for r in liens:
-        contacts.setdefault(r.eleve_id, r)
-
+    contacts = contacts_par_eleve(ecole, ids)
     historique = {
         h["eleve_id"]: h
         for h in RelancePaiement.objects
@@ -62,7 +53,6 @@ def relances(request):
         if eleve is None:
             continue
         classe = classes.get(eid)
-        rel = contacts.get(eid)
         h = historique.get(eid)
         resultats.append({
             "eleve_id": eid,
@@ -73,12 +63,7 @@ def relances(request):
             "a_payer": int(s["a_payer"]),
             "paye": int(s["paye"]),
             "reste": int(s["reste"]),
-            "parent": None if not rel else {
-                "nom": rel.parent.nom,
-                "prenom": rel.parent.prenom,
-                "telephone": rel.parent.telephone,
-                "lien": rel.get_type_lien_display(),
-            },
+            "contacts": contacts.get(eid, []),
             "nb_relances": h["nb"] if h else 0,
             "derniere_relance": h["derniere"] if h else None,
         })

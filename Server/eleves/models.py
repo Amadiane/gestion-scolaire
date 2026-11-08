@@ -10,6 +10,7 @@ class Parent(models.Model):
     nom = models.CharField(max_length=100)
     prenom = models.CharField(max_length=100)
     telephone = models.CharField(max_length=20)
+    telephone_secondaire = models.CharField(max_length=20, blank=True, default="")
     email = models.EmailField(blank=True, null=True)
     adresse = models.CharField(max_length=255, blank=True)
     date_creation = models.DateTimeField(auto_now_add=True)
