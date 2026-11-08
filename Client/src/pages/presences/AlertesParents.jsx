@@ -6,10 +6,14 @@ import { lienWhatsApp } from '../../utils/whatsapp.js';
 import ContactsBoutons from '../../components/Contacts/ContactsBoutons.jsx';
 import styles from '../../theme/pages/admin/AlertesParents.module.css';
 
-const CLE_MODELE = 'sylium_modele_relance_v2';
+// const CLE_MODELE = 'sylium_modele_alerte';
+// const MODELE_DEFAUT =
+//   "Bonjour {parent}, {ecole} vous informe que {eleve} était {statut} le {date}. " +
+//   'Merci de nous contacter si besoin.';
+const CLE_MODELE = 'sylium_modele_alerte_v2';
 const MODELE_DEFAUT =
-  "Bonjour {parent}, {ecole} vous informe qu'il reste {reste} GNF à régler pour la scolarité de {eleve}. " +
-  "Merci de passer à l'école ou de nous contacter. Si vous avez déjà payé, veuillez ignorer ce message.";
+  'Bonjour {parent}, {ecole} vous informe que {eleve} était {statut} le {date}. ' +
+  'Merci de nous contacter si besoin.';
 
 const iso = (d) => d.toLocaleDateString('en-CA');
 const decaler = (dateIso, jours) => {

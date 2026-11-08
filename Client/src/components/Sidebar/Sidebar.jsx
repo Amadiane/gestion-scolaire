@@ -9,25 +9,51 @@ import styles from '../../theme/components/Sidebar.module.css';
 
 // `roles` limite l'affichage du lien. Le vrai contrôle d'accès reste côté
 // backend : masquer un lien n'est qu'une question d'ergonomie.
-const NAV_ITEMS = [
-  { to: '/dashboardAdmin', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
-  { to: '/dashboardAdmin/eleves', label: 'Élèves', icon: Users },
-  { to: '/dashboardAdmin/parents', label: 'Parents', icon: UserCog },
-  { to: '/dashboardAdmin/personnel', label: 'Personnel', icon: Briefcase, roles: ['directeur'] },
-  { to: '/dashboardAdmin/classes', label: 'Classes', icon: School },
-  { to: '/dashboardAdmin/presences', label: 'Présences élèves', icon: ClipboardCheck, roles: ['directeur', 'secretaire', 'surveillant'] },
-  { to: '/dashboardAdmin/presences-suivi', label: 'Suivi des présences', icon: CalendarDays, roles: ['directeur', 'secretaire', 'surveillant'] },
-  { to: '/dashboardAdmin/alertes-parents', label: 'Alertes parents', icon: MessageCircle, roles: ['directeur', 'secretaire', 'surveillant'] },
-  { to: '/dashboardAdmin/presences-personnel', label: 'Présences personnel', icon: UserCheck, roles: ['directeur'] },
-  { to: '/dashboardAdmin/notes', label: 'Notes', icon: BookOpen },
-  { to: '/dashboardAdmin/bulletins', label: 'Bulletins', icon: FileText },
-  { to: '/dashboardAdmin/cartes', label: 'Cartes', icon: CreditCard, roles: ['directeur', 'secretaire'] },
-  { to: '/dashboardAdmin/finance', label: 'Finance', icon: Wallet, roles: ['directeur', 'comptable'] },
-  { to: '/dashboardAdmin/relances-paiement', label: 'Relances paiement', icon: BellRing, roles: ['directeur', 'comptable'] },
-  { to: '/dashboardAdmin/annees-scolaires', label: 'Années scolaires', icon: Calendar },
-  { to: '/dashboardAdmin/utilisateurs', label: 'Utilisateurs', icon: ShieldCheck, roles: ['directeur'] },
-  { to: '/dashboardAdmin/affectations', label: 'Affectations', icon: ClipboardList, roles: ['directeur'] },
-  { to: '/dashboardAdmin/mon-ecole', label: 'Mon école', icon: Building2, roles: ['directeur'] },
+// Les liens sont regroupés par thème ; un groupe sans lien visible n'est pas affiché.
+const SECTIONS = [
+  {
+    titre: null,
+    liens: [
+      { to: '/dashboardAdmin', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
+    ],
+  },
+  {
+    titre: 'Scolarité',
+    liens: [
+      { to: '/dashboardAdmin/eleves', label: 'Élèves', icon: Users },
+      { to: '/dashboardAdmin/parents', label: 'Parents', icon: UserCog },
+      { to: '/dashboardAdmin/classes', label: 'Classes', icon: School },
+      { to: '/dashboardAdmin/notes', label: 'Notes', icon: BookOpen },
+      { to: '/dashboardAdmin/bulletins', label: 'Bulletins', icon: FileText },
+      { to: '/dashboardAdmin/cartes', label: 'Cartes', icon: CreditCard, roles: ['directeur', 'secretaire'] },
+    ],
+  },
+  {
+    titre: 'Présences',
+    liens: [
+      { to: '/dashboardAdmin/presences', label: 'Faire l\'appel', icon: ClipboardCheck, roles: ['directeur', 'secretaire', 'surveillant'] },
+      { to: '/dashboardAdmin/presences-suivi', label: 'Suivi des présences', icon: CalendarDays, roles: ['directeur', 'secretaire', 'surveillant'] },
+      { to: '/dashboardAdmin/alertes-parents', label: 'Alertes parents', icon: MessageCircle, roles: ['directeur', 'secretaire', 'surveillant'] },
+      { to: '/dashboardAdmin/presences-personnel', label: 'Présences personnel', icon: UserCheck, roles: ['directeur'] },
+    ],
+  },
+  {
+    titre: 'Finance',
+    liens: [
+      { to: '/dashboardAdmin/finance', label: 'Finance', icon: Wallet, roles: ['directeur', 'comptable'] },
+      { to: '/dashboardAdmin/relances-paiement', label: 'Relances paiement', icon: BellRing, roles: ['directeur', 'comptable'] },
+    ],
+  },
+  {
+    titre: 'Administration',
+    liens: [
+      { to: '/dashboardAdmin/personnel', label: 'Personnel', icon: Briefcase, roles: ['directeur'] },
+      { to: '/dashboardAdmin/annees-scolaires', label: 'Années scolaires', icon: Calendar },
+      { to: '/dashboardAdmin/utilisateurs', label: 'Utilisateurs', icon: ShieldCheck, roles: ['directeur'] },
+      { to: '/dashboardAdmin/affectations', label: 'Affectations', icon: ClipboardList, roles: ['directeur'] },
+      { to: '/dashboardAdmin/mon-ecole', label: 'Mon école', icon: Building2, roles: ['directeur'] },
+    ],
+  },
 ];
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -40,7 +66,9 @@ const Sidebar = ({ isOpen, onClose }) => {
     window.location.href = '/login';
   };
 
-  const liens = NAV_ITEMS.filter((item) => !item.roles || item.roles.includes(user.role));
+  const sections = SECTIONS
+    .map((s) => ({ ...s, liens: s.liens.filter((l) => !l.roles || l.roles.includes(user.role)) }))
+    .filter((s) => s.liens.length > 0);
 
   return (
     <>
@@ -59,17 +87,22 @@ const Sidebar = ({ isOpen, onClose }) => {
         </div>
 
         <nav className={styles.nav}>
-          {liens.map(({ to, label, icon: Icon, end }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              onClick={onClose}
-              className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
-            >
-              <Icon size={18} />
-              <span>{label}</span>
-            </NavLink>
+          {sections.map((section, i) => (
+            <div key={section.titre || `section-${i}`}>
+              {section.titre && <div className={styles.sectionTitle}>{section.titre}</div>}
+              {section.liens.map(({ to, label, icon: Icon, end }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end={end}
+                  onClick={onClose}
+                  className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
+                >
+                  <Icon size={18} />
+                  <span>{label}</span>
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
 

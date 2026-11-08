@@ -12,6 +12,6 @@ urlpatterns = router.urls + [
     path("finance/situation/", views.situation, name="finance_situation"),
     path("finance/arrieres/", views.arrieres, name="finance_arrieres"),
     path("finance/remise/", views.remise, name="finance_remise"),
-    path("relances/", relances),
-    path("relances/marquer/", marquer_relance),
+    path("finance/relances/", relances, name="finance_relances"),
+    path("finance/relances/marquer/", marquer_relance, name="finance_relances_marquer"),
 ]

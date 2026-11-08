@@ -7,10 +7,10 @@ import { lienWhatsApp } from '../../utils/whatsapp.js';
 import ContactsBoutons from '../../components/Contacts/ContactsBoutons.jsx';
 import styles from '../../theme/pages/admin/AlertesParents.module.css';
 
-const CLE_MODELE = 'sylium_modele_relance';
+const CLE_MODELE = 'sylium_modele_relance_v4';
 const MODELE_DEFAUT =
-  "Bonjour {parent}, l'école {ecole} vous informe qu'il reste {reste} GNF à régler pour la scolarité de {eleve}. " +
-  "Merci de passer à l'école ou de nous contacter. Si vous avez déjà payé, veuillez ignorer ce message.";
+  "Bonjour {parent}, {ecole} vous informe qu'il reste {reste} GNF à régler pour la scolarité de {eleve}. " +
+  "Merci de passer à l'école ou de nous contacter pour régulariser.";
 
 const fmtDate = (v) => {
   if (!v) return '';
@@ -44,9 +44,12 @@ const RelancesPaiement = () => {
       setDonnees(res.data);
     } catch (err) {
       setDonnees({ ecole: '', total_reste: 0, eleves: [] });
+      const code = err.response?.status;
       setErreur(
         err.response?.data?.detail ||
-          'Impossible de charger les relances. Cette page demande une connexion internet.'
+          (code
+            ? `Le serveur a répondu avec l'erreur ${code}.`
+            : 'Impossible de joindre le serveur. Vérifiez votre connexion internet.')
       );
     } finally {
       setChargement(false);
