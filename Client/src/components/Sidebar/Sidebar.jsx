@@ -82,7 +82,8 @@ const Sidebar = ({ isOpen, onClose }) => {
 
       <aside className={`${styles.sidebar} ${isOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.header}>
-          <div className={styles.logo}>SI</div>
+          {/* <div className={styles.logo}>SI</div> */}
+            <div className={styles.logo}><img src="/logo-sylium-192.png" alt="Sylium" /></div>
           <div>
             <div className={styles.brand}>Sylium</div>
             <div className={styles.brandSub}>Gestion Scolaire</div>

@@ -5,7 +5,9 @@ import {
   Calendar, CalendarDays, CalendarClock, Wallet, ShieldCheck, ClipboardList, Briefcase, CreditCard,
   Building2, ClipboardCheck, UserCheck, KeyRound, LogOut, X, MessageCircle, BellRing,
 } from 'lucide-react';
-import styles from '../../theme/components/SidebarEnseignant.module.css';
+// import styles from '../../theme/components/SidebarEnseignant.module.css';
+import styles from '../../theme/components/Sidebar.module.css';
+
 
 const SECTIONS = [
   {
@@ -41,7 +43,8 @@ const SidebarEnseignant = ({ isOpen, onClose }) => {
 
       <aside className={`${styles.sidebar} ${isOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.header}>
-          <div className={styles.logo}>SI</div>
+          {/* <div className={styles.logo}>SI</div> */}
+            <div className={styles.logo}><img src="/logo-sylium-192.png" alt="Sylium" /></div>
           <div>
             <div className={styles.brand}>Sylium</div>
             <div className={styles.brandSub}>Espace Enseignant</div>

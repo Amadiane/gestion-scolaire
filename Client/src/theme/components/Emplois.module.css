@@ -1,4 +1,4 @@
-.wrapper { max-width: 1150px; margin: 0 auto; padding: 16px; }
+﻿.wrapper { max-width: 1150px; margin: 0 auto; padding: 16px; }
 .titre { margin: 0 0 4px; font-size: 1.4rem; }
 .aide { color: #64748b; font-size: .88rem; margin: 4px 0 12px; }
 .erreur { background: #fef2f2; color: #b91c1c; padding: 10px 12px; border-radius: 8px; margin: 8px 0; font-size: .9rem; }
@@ -13,13 +13,13 @@
 .onglet, .ongletActif {
   border: 1px solid #cbd5e1; background: #fff; border-radius: 999px; padding: 7px 14px; font-size: .85rem; cursor: pointer;
 }
-.ongletActif { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+.ongletActif { background: var(--sylium-bleu); border-color: var(--sylium-bleu); color: #fff; }
 .espace { flex: 1; }
 .btn, .btnPrimaire {
   display: inline-flex; align-items: center; gap: 6px; border: 1px solid #cbd5e1; background: #fff;
   border-radius: 8px; padding: 9px 13px; font-size: .88rem; cursor: pointer;
 }
-.btnPrimaire { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+.btnPrimaire { background: var(--sylium-bleu); border-color: var(--sylium-bleu); color: #fff; }
 .btn:disabled, .btnPrimaire:disabled { opacity: .5; cursor: default; }
 .btnDanger { color: #b91c1c; border-color: #fecaca; }
 
@@ -34,10 +34,10 @@
 .grille tbody th { background: #f8fafc; width: 96px; white-space: nowrap; font-weight: 600; }
 .carte, .carteBtn {
   display: block; width: 100%; text-align: left; border-radius: 8px; padding: 6px 8px; margin-bottom: 4px;
-  background: #eff6ff; border: 1px solid #dbeafe; color: #0f172a; font: inherit; box-sizing: border-box;
+  background: var(--sylium-bleu-pale); border: 1px solid var(--sylium-bleu-clair); color: #0f172a; font: inherit; box-sizing: border-box;
 }
 .carteBtn { cursor: pointer; }
-.carteBtn:hover { background: #dbeafe; }
+.carteBtn:hover { background: var(--sylium-bleu-clair); }
 .carte strong, .carteBtn strong { display: block; font-size: .88rem; }
 .carte small, .carteBtn small { color: #475569; font-size: .78rem; }
 
@@ -64,7 +64,7 @@
   display: inline-flex; align-items: center; gap: 4px; border: 1px solid #cbd5e1; border-radius: 999px;
   padding: 5px 10px; font-size: .82rem; cursor: pointer; background: #fff;
 }
-.jourCaseActif { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+.jourCaseActif { background: var(--sylium-bleu); border-color: var(--sylium-bleu); color: #fff; }
 .jourCase input { display: none; }
 .pied { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
 .piedDroite { display: flex; gap: 8px; margin-left: auto; }

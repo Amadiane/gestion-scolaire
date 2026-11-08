@@ -1,20 +1,35 @@
 :root {
-  --color-primary: #1E3A5F;
-  --color-primary-dark: #122842;
-  --color-accent: #2F8F5B;
-  --color-bg: #F7F8FA;
-  --color-surface: #FFFFFF;
-  --color-card: #F0F2F5;
-  --color-border: #DCE1E8;
-  --color-text: #1A2333;
-  --color-text-muted: #5B6472;
-  --color-text-dim: #96A0AC;
-  --color-danger: #A32020;
-  --color-danger-bg: #FDEAEA;
+  /* ===== Charte Sylium (relevée sur le logo) ===== */
+  --sylium-marine-900: #001854;
+  --sylium-marine: #002460;
+  --sylium-bleu: #0048a8;
+  --sylium-bleu-clair: #e6eef9;
+  --sylium-bleu-pale: #f2f6fc;
+  --sylium-or: #e5a100;
+  --sylium-or-clair: #fdf3d6;
+
+  /* ===== Rôles utilisés dans toute l'application ===== */
+  --color-primary: var(--sylium-bleu);        /* boutons, liens, onglets actifs */
+  --color-primary-dark: var(--sylium-marine); /* menu latéral, structure */
+  --color-accent: var(--sylium-or);           /* accent : à utiliser avec parcimonie */
+  --color-success: #15803d;                   /* présent, payé, validé */
+  --color-bg: #f4f7fb;
+  --color-surface: #ffffff;
+  --color-card: #edf2f9;
+  --color-border: #d6deeb;
+  --color-text: #0f1b33;
+  --color-text-muted: #4f5e7a;
+  --color-text-dim: #8493ac;
+  --color-danger: #a32020;
+  --color-danger-bg: #fdeaea;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Inter', system-ui, sans-serif; color: var(--color-text); }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--color-text);
+  background: var(--color-bg);
+}
 
 html { -webkit-text-size-adjust: 100%; }
 button { touch-action: manipulation; }
