@@ -28,6 +28,8 @@ import MonEcole from './pages/admin/MonEcole.jsx';
 import AppelClasse from './pages/presences/AppelClasse.jsx';
 import PresencesPersonnel from './pages/presences/PresencesPersonnel.jsx';
 import RapportPresences from './pages/presences/RapportPresences.jsx';
+import AlertesParents from './pages/presences/AlertesParents.jsx';
+import RelancesPaiement from './pages/admin/RelancesPaiement.jsx';
 import Sylium from './pages/sylium/Sylium.jsx';
 
 const ROLES_ADMIN = ['directeur', 'secretaire', 'comptable', 'surveillant'];
@@ -117,6 +119,8 @@ function App() {
         <Route path="presences" element={<AppelClasse />} />
         <Route path="presences-personnel" element={<PresencesPersonnel />} />
         <Route path="presences-suivi" element={<RapportPresences />} />
+        <Route path="alertes-parents" element={<AlertesParents />} />
+        <Route path="relances-paiement" element={<RelancesPaiement />} />
       </Route>
 
       <Route

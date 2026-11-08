@@ -9,6 +9,7 @@ from .presences import (
 from .public import carte_publique
 from .views import PersonnelViewSet
 from .tableau import tableau_finance, tableau_presences
+from .alertes import alertes_du_jour, marquer_alerte
 
 router = DefaultRouter()
 router.register(r"personnel", PersonnelViewSet, basename="personnel")
@@ -17,6 +18,8 @@ router.register(r"personnel", PersonnelViewSet, basename="personnel")
 urlpatterns = [
     path("mon-ecole/", mon_ecole),
     path("carte-publique/<str:matricule>/", carte_publique),
+    path("presences/alertes/", alertes_du_jour),
+    path("presences/alertes/marquer/", marquer_alerte),
     path("presences/", presences_du_jour),
     path("presences/synchroniser/", synchroniser_presences),
     path("presences/eleve/<int:eleve_id>/", assiduite_eleve),
@@ -25,4 +28,5 @@ urlpatterns = [
     path("presences/rapport/", rapport_presences),
     path("tableau/presences/", tableau_presences),
     path("tableau/finance/", tableau_finance),
+    
 ] + router.urls

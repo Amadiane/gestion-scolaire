@@ -68,16 +68,13 @@ class Paiement(models.Model):
         "accounts.Utilisateur", on_delete=models.SET_NULL, null=True, related_name="paiements_enregistres"
     )
     date_creation = models.DateTimeField(auto_now_add=True)
-        # Référence générée par l'appareil : empêche tout double encaissement à la synchronisation.
+    # Référence générée par l'appareil : empêche tout double encaissement à la synchronisation.
     reference_client = models.UUIDField(null=True, blank=True, editable=False)
 
     class Meta:
         verbose_name = "Paiement"
         verbose_name_plural = "Paiements"
         ordering = ["-date_paiement", "-id"]
-        # constraints = [
-        #     models.UniqueConstraint(fields=["ecole", "numero_recu"], name="recu_unique_par_ecole")
-        # ]
         constraints = [
             models.UniqueConstraint(fields=["ecole", "numero_recu"], name="recu_unique_par_ecole"),
             models.UniqueConstraint(
@@ -104,3 +101,25 @@ class Paiement(models.Model):
         if not self.numero_recu:
             self.numero_recu = self._generer_numero()
         super().save(*args, **kwargs)
+
+
+class RelancePaiement(models.Model):
+    """Trace d'une relance envoyée à un parent. N'affecte jamais les paiements."""
+    ecole = models.ForeignKey(School, on_delete=models.CASCADE, related_name="relances_paiement")
+    eleve = models.ForeignKey("eleves.Eleve", on_delete=models.CASCADE, related_name="relances_paiement")
+    annee_scolaire = models.ForeignKey(AnneeScolaire, on_delete=models.CASCADE, related_name="relances_paiement")
+    reste = models.DecimalField(max_digits=12, decimal_places=0, default=0)  # reste dû au moment de la relance
+    canal = models.CharField(max_length=20, default="whatsapp")
+    envoye_par = models.ForeignKey(
+        "accounts.Utilisateur", on_delete=models.SET_NULL, null=True, blank=True, related_name="relances_envoyees"
+    )
+    envoye_le = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Relance de paiement"
+        verbose_name_plural = "Relances de paiement"
+        ordering = ["-envoye_le"]
+        indexes = [models.Index(fields=["ecole", "annee_scolaire", "eleve"])]
+
+    def __str__(self):
+        return f"Relance {self.eleve_id} — {self.envoye_le:%d/%m/%Y}"

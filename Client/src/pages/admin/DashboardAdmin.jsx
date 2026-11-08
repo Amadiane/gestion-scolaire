@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, School, UserCog, BookOpen, Wallet, AlertCircle, AlertTriangle } from 'lucide-react';
+import {
+  Users, School, UserCog, BookOpen, Wallet, AlertCircle, AlertTriangle,
+  ClipboardCheck, MessageCircle, BellRing,
+} from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
 import { formatGNF } from '../../utils/finance.js';
@@ -9,6 +12,12 @@ import styles from '../../theme/pages/admin/DashboardAdmin.module.css';
 import grille from '../../theme/pages/admin/DashboardAdminGrille.module.css';
 
 const TRIMESTRE = { t1: '1er trim.', t2: '2ème trim.', t3: '3ème trim.' };
+
+const RACCOURCIS = [
+  { label: "Faire l'appel", vers: '/dashboardAdmin/presences', icon: ClipboardCheck, roles: ['directeur', 'secretaire', 'surveillant'] },
+  { label: 'Alertes parents', vers: '/dashboardAdmin/alertes-parents', icon: MessageCircle, roles: ['directeur', 'secretaire', 'surveillant'] },
+  { label: 'Relances de paiement', vers: '/dashboardAdmin/relances-paiement', icon: BellRing, roles: ['directeur', 'comptable'] },
+];
 
 const comparer = (a, b) =>
   String(a || '').localeCompare(String(b || ''), 'fr', { numeric: true, sensitivity: 'base' });
@@ -53,6 +62,8 @@ const DashboardAdmin = () => {
   const maxEffectif = Math.max(1, ...classes.map((c) => c.effectif));
   const totalSexe = stats ? stats.garcons + stats.filles : 0;
   const pctGarcons = totalSexe ? Math.round((stats.garcons / totalSexe) * 100) : 0;
+
+  const raccourcis = RACCOURCIS.filter((r) => r.roles.includes(user.role));
 
   const ouvrir = (vers) => (e) => {
     if (e.type === 'click' || e.key === 'Enter' || e.key === ' ') navigate(vers);
@@ -106,6 +117,16 @@ const DashboardAdmin = () => {
               ))}
             </div>
           </div>
+
+          {raccourcis.length > 0 && (
+            <div className={grille.raccourcis}>
+              {raccourcis.map(({ label, vers, icon: Icon }) => (
+                <button key={vers} type="button" className={grille.raccourci} onClick={() => navigate(vers)}>
+                  <Icon size={15} /> {label}
+                </button>
+              ))}
+            </div>
+          )}
 
           <TableauAnalyses role={user.role} />
 

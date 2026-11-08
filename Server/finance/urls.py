@@ -1,5 +1,6 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
+from .relances import relances, marquer_relance
 
 from . import views
 
@@ -11,4 +12,6 @@ urlpatterns = router.urls + [
     path("finance/situation/", views.situation, name="finance_situation"),
     path("finance/arrieres/", views.arrieres, name="finance_arrieres"),
     path("finance/remise/", views.remise, name="finance_remise"),
+    path("relances/", relances),
+    path("relances/marquer/", marquer_relance),
 ]

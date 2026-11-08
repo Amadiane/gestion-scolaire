@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Users, School, BookOpen, FileText, UserCog,
   Calendar, CalendarDays, Wallet, ShieldCheck, ClipboardList, Briefcase, CreditCard,
-  Building2, ClipboardCheck, UserCheck, KeyRound, LogOut, X,
+  Building2, ClipboardCheck, UserCheck, KeyRound, LogOut, X, MessageCircle, BellRing,
 } from 'lucide-react';
 import styles from '../../theme/components/Sidebar.module.css';
 
@@ -17,11 +17,13 @@ const NAV_ITEMS = [
   { to: '/dashboardAdmin/classes', label: 'Classes', icon: School },
   { to: '/dashboardAdmin/presences', label: 'Présences élèves', icon: ClipboardCheck, roles: ['directeur', 'secretaire', 'surveillant'] },
   { to: '/dashboardAdmin/presences-suivi', label: 'Suivi des présences', icon: CalendarDays, roles: ['directeur', 'secretaire', 'surveillant'] },
+  { to: '/dashboardAdmin/alertes-parents', label: 'Alertes parents', icon: MessageCircle, roles: ['directeur', 'secretaire', 'surveillant'] },
   { to: '/dashboardAdmin/presences-personnel', label: 'Présences personnel', icon: UserCheck, roles: ['directeur'] },
   { to: '/dashboardAdmin/notes', label: 'Notes', icon: BookOpen },
   { to: '/dashboardAdmin/bulletins', label: 'Bulletins', icon: FileText },
   { to: '/dashboardAdmin/cartes', label: 'Cartes', icon: CreditCard, roles: ['directeur', 'secretaire'] },
   { to: '/dashboardAdmin/finance', label: 'Finance', icon: Wallet, roles: ['directeur', 'comptable'] },
+  { to: '/dashboardAdmin/relances-paiement', label: 'Relances paiement', icon: BellRing, roles: ['directeur', 'comptable'] },
   { to: '/dashboardAdmin/annees-scolaires', label: 'Années scolaires', icon: Calendar },
   { to: '/dashboardAdmin/utilisateurs', label: 'Utilisateurs', icon: ShieldCheck, roles: ['directeur'] },
   { to: '/dashboardAdmin/affectations', label: 'Affectations', icon: ClipboardList, roles: ['directeur'] },

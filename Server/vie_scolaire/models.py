@@ -142,3 +142,7 @@ class PresencePersonnel(models.Model):
 
     def __str__(self):
         return f"{self.membre} — {self.date} : {self.get_statut_display()}"
+
+
+
+from .alertes_models import AlerteParent  # noqa: E402,F401
