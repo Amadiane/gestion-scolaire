@@ -2,11 +2,21 @@ import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, BookOpen, School, ClipboardCheck, KeyRound, LogOut, X } from 'lucide-react';
 import styles from '../../theme/components/SidebarEnseignant.module.css';
 
-const NAV_ITEMS = [
-  { to: '/enseignant', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
-  { to: '/enseignant/mes-classes', label: 'Mes classes', icon: School },
-  { to: '/enseignant/notes', label: 'Saisir des notes', icon: BookOpen },
-  { to: '/enseignant/presences', label: 'Faire l\'appel', icon: ClipboardCheck },
+const SECTIONS = [
+  {
+    titre: null,
+    liens: [
+      { to: '/enseignant', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
+      { to: '/enseignant/mes-classes', label: 'Mes classes', icon: School },
+    ],
+  },
+  {
+    titre: 'Mon travail',
+    liens: [
+      { to: '/enseignant/presences', label: "Faire l'appel", icon: ClipboardCheck },
+      { to: '/enseignant/notes', label: 'Saisir des notes', icon: BookOpen },
+    ],
+  },
 ];
 
 const SidebarEnseignant = ({ isOpen, onClose }) => {
@@ -36,17 +46,22 @@ const SidebarEnseignant = ({ isOpen, onClose }) => {
         </div>
 
         <nav className={styles.nav}>
-          {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              onClick={onClose}
-              className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
-            >
-              <Icon size={18} />
-              <span>{label}</span>
-            </NavLink>
+          {SECTIONS.map((section, i) => (
+            <div key={section.titre || `section-${i}`}>
+              {section.titre && <div className={styles.sectionTitle}>{section.titre}</div>}
+              {section.liens.map(({ to, label, icon: Icon, end }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end={end}
+                  onClick={onClose}
+                  className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
+                >
+                  <Icon size={18} />
+                  <span>{label}</span>
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
 
