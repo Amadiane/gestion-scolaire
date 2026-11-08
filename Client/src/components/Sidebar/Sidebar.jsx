@@ -1,8 +1,13 @@
 // src/components/Sidebar/Sidebar.jsx
 import { NavLink } from 'react-router-dom';
+// import {
+//   LayoutDashboard, Users, School, BookOpen, FileText, UserCog,
+//   Calendar, CalendarDays, Wallet, ShieldCheck, ClipboardList, Briefcase, CreditCard,
+//   Building2, ClipboardCheck, UserCheck, KeyRound, LogOut, X, MessageCircle, BellRing,
+// } from 'lucide-react';
 import {
   LayoutDashboard, Users, School, BookOpen, FileText, UserCog,
-  Calendar, CalendarDays, Wallet, ShieldCheck, ClipboardList, Briefcase, CreditCard,
+  Calendar, CalendarDays, CalendarClock, Wallet, ShieldCheck, ClipboardList, Briefcase, CreditCard,
   Building2, ClipboardCheck, UserCheck, KeyRound, LogOut, X, MessageCircle, BellRing,
 } from 'lucide-react';
 import styles from '../../theme/components/Sidebar.module.css';
@@ -26,6 +31,7 @@ const SECTIONS = [
       { to: '/dashboardAdmin/notes', label: 'Notes', icon: BookOpen },
       { to: '/dashboardAdmin/bulletins', label: 'Bulletins', icon: FileText },
       { to: '/dashboardAdmin/cartes', label: 'Cartes', icon: CreditCard, roles: ['directeur', 'secretaire'] },
+      { to: '/dashboardAdmin/emplois-du-temps', label: 'Emplois du temps', icon: CalendarClock },
     ],
   },
   {

@@ -1,6 +1,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
+from .emploi import CreneauViewSet
 from .views import (
     AffectationViewSet, AnneeScolaireViewSet, BulletinViewSet, ClasseViewSet,
     MatiereViewSet, NiveauViewSet, NoteViewSet, mes_affectations,
@@ -14,6 +15,7 @@ router.register("classes", ClasseViewSet, basename="classe")
 router.register("notes", NoteViewSet, basename="note")
 router.register("bulletins", BulletinViewSet, basename="bulletin")
 router.register("affectations", AffectationViewSet, basename="affectation")
+router.register("emplois", CreneauViewSet, basename="emploi")
 
 urlpatterns = router.urls + [
     path("mes-affectations/", mes_affectations, name="mes_affectations"),

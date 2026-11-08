@@ -70,6 +70,8 @@ const CONFIG = {
 
   API_RELANCES: `${BASE_URL}/api/finance/relances/`,
   API_RELANCES_MARQUER: `${BASE_URL}/api/finance/relances/marquer/`,
+
+  API_EMPLOIS: `${BASE_URL}/api/emplois/`,
   CLOUDINARY_NAME: "kdcjs7fx",
 };
 

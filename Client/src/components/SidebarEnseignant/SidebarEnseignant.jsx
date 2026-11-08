@@ -1,5 +1,10 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, School, ClipboardCheck, KeyRound, LogOut, X } from 'lucide-react';
+// import { LayoutDashboard, BookOpen, School, ClipboardCheck, KeyRound, LogOut, X } from 'lucide-react';
+import {
+  LayoutDashboard, Users, School, BookOpen, FileText, UserCog,
+  Calendar, CalendarDays, CalendarClock, Wallet, ShieldCheck, ClipboardList, Briefcase, CreditCard,
+  Building2, ClipboardCheck, UserCheck, KeyRound, LogOut, X, MessageCircle, BellRing,
+} from 'lucide-react';
 import styles from '../../theme/components/SidebarEnseignant.module.css';
 
 const SECTIONS = [
@@ -15,6 +20,7 @@ const SECTIONS = [
     liens: [
       { to: '/enseignant/presences', label: "Faire l'appel", icon: ClipboardCheck },
       { to: '/enseignant/notes', label: 'Saisir des notes', icon: BookOpen },
+      { to: '/enseignant/emploi', label: 'Mon emploi du temps', icon: CalendarClock },
     ],
   },
 ];

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Users, School, UserCog, BookOpen, Wallet, AlertCircle, AlertTriangle,
-  ClipboardCheck, MessageCircle, BellRing,
+  ClipboardCheck, MessageCircle, BellRing, CalendarClock,
 } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
@@ -16,6 +16,7 @@ const TRIMESTRE = { t1: '1er trim.', t2: '2ème trim.', t3: '3ème trim.' };
 const RACCOURCIS = [
   { label: "Faire l'appel", vers: '/dashboardAdmin/presences', icon: ClipboardCheck, roles: ['directeur', 'secretaire', 'surveillant'] },
   { label: 'Alertes parents', vers: '/dashboardAdmin/alertes-parents', icon: MessageCircle, roles: ['directeur', 'secretaire', 'surveillant'] },
+  { label: 'Emplois du temps', vers: '/dashboardAdmin/emplois-du-temps', icon: CalendarClock, roles: ['directeur', 'secretaire', 'surveillant'] },
   { label: 'Relances de paiement', vers: '/dashboardAdmin/relances-paiement', icon: BellRing, roles: ['directeur', 'comptable'] },
 ];
 

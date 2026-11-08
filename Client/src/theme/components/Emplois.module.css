@@ -1,0 +1,75 @@
+.wrapper { max-width: 1150px; margin: 0 auto; padding: 16px; }
+.titre { margin: 0 0 4px; font-size: 1.4rem; }
+.aide { color: #64748b; font-size: .88rem; margin: 4px 0 12px; }
+.erreur { background: #fef2f2; color: #b91c1c; padding: 10px 12px; border-radius: 8px; margin: 8px 0; font-size: .9rem; }
+.info { background: #f0fdf4; color: #15803d; padding: 10px 12px; border-radius: 8px; margin: 8px 0; font-size: .9rem; }
+.vide { color: #64748b; text-align: center; padding: 28px 8px; }
+
+.barre { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 12px; }
+.select {
+  border: 1px solid #cbd5e1; background: #fff; border-radius: 8px; padding: 9px 10px; font-size: .92rem; min-width: 180px;
+}
+.onglets { display: flex; gap: 4px; }
+.onglet, .ongletActif {
+  border: 1px solid #cbd5e1; background: #fff; border-radius: 999px; padding: 7px 14px; font-size: .85rem; cursor: pointer;
+}
+.ongletActif { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+.espace { flex: 1; }
+.btn, .btnPrimaire {
+  display: inline-flex; align-items: center; gap: 6px; border: 1px solid #cbd5e1; background: #fff;
+  border-radius: 8px; padding: 9px 13px; font-size: .88rem; cursor: pointer;
+}
+.btnPrimaire { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+.btn:disabled, .btnPrimaire:disabled { opacity: .5; cursor: default; }
+.btnDanger { color: #b91c1c; border-color: #fecaca; }
+
+.panneau { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+.coche { display: flex; align-items: center; gap: 6px; font-size: .88rem; margin: 8px 0; }
+
+.vues { display: flex; gap: 6px; margin-bottom: 8px; }
+.tableWrap { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; }
+.grille { width: 100%; border-collapse: collapse; min-width: 720px; table-layout: fixed; }
+.grille th, .grille td { border: 1px solid #e2e8f0; padding: 6px; vertical-align: top; font-size: .85rem; }
+.grille thead th { background: #f1f5f9; }
+.grille tbody th { background: #f8fafc; width: 96px; white-space: nowrap; font-weight: 600; }
+.carte, .carteBtn {
+  display: block; width: 100%; text-align: left; border-radius: 8px; padding: 6px 8px; margin-bottom: 4px;
+  background: #eff6ff; border: 1px solid #dbeafe; color: #0f172a; font: inherit; box-sizing: border-box;
+}
+.carteBtn { cursor: pointer; }
+.carteBtn:hover { background: #dbeafe; }
+.carte strong, .carteBtn strong { display: block; font-size: .88rem; }
+.carte small, .carteBtn small { color: #475569; font-size: .78rem; }
+
+.jour { margin-bottom: 14px; }
+.jourTitre { font-weight: 700; margin: 0 0 6px; }
+.ligneJour { display: grid; grid-template-columns: 96px 1fr; gap: 8px; align-items: start; margin-bottom: 6px; }
+.heure { font-size: .85rem; font-weight: 600; color: #334155; padding-top: 6px; }
+
+.fond {
+  position: fixed; inset: 0; background: rgba(15, 23, 42, .5); z-index: 1000;
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.fenetre { background: #fff; border-radius: 14px; width: 100%; max-width: 480px; max-height: 92vh; overflow-y: auto; padding: 18px; }
+.fenetreTitre { display: flex; justify-content: space-between; align-items: center; margin: 0 0 12px; }
+.fenetreTitre h3 { margin: 0; font-size: 1.1rem; }
+.fermer { background: none; border: 0; cursor: pointer; padding: 4px; }
+.champ { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; font-size: .85rem; color: #334155; }
+.champ input, .champ select {
+  border: 1px solid #cbd5e1; border-radius: 8px; padding: 9px 10px; font-size: .95rem; background: #fff;
+}
+.deux { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.joursChoix { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.jourCase {
+  display: inline-flex; align-items: center; gap: 4px; border: 1px solid #cbd5e1; border-radius: 999px;
+  padding: 5px 10px; font-size: .82rem; cursor: pointer; background: #fff;
+}
+.jourCaseActif { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+.jourCase input { display: none; }
+.pied { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.piedDroite { display: flex; gap: 8px; margin-left: auto; }
+
+@media (max-width: 520px) {
+  .deux { grid-template-columns: 1fr; }
+  .ligneJour { grid-template-columns: 1fr; }
+}

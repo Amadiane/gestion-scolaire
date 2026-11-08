@@ -30,6 +30,8 @@ import PresencesPersonnel from './pages/presences/PresencesPersonnel.jsx';
 import RapportPresences from './pages/presences/RapportPresences.jsx';
 import AlertesParents from './pages/presences/AlertesParents.jsx';
 import RelancesPaiement from './pages/admin/RelancesPaiement.jsx';
+import EmploisDuTemps from './pages/admin/EmploisDuTemps.jsx';
+import MonEmploi from './pages/enseignant/MonEmploi.jsx';
 import Sylium from './pages/sylium/Sylium.jsx';
 
 const ROLES_ADMIN = ['directeur', 'secretaire', 'comptable', 'surveillant'];
@@ -121,6 +123,7 @@ function App() {
         <Route path="presences-suivi" element={<RapportPresences />} />
         <Route path="alertes-parents" element={<AlertesParents />} />
         <Route path="relances-paiement" element={<RelancesPaiement />} />
+        <Route path="emplois-du-temps" element={<EmploisDuTemps />} />
       </Route>
 
       <Route
@@ -135,6 +138,7 @@ function App() {
         <Route path="mes-classes" element={<MesClasses />} />
         <Route path="notes" element={<NotesEnseignant />} />
         <Route path="presences" element={<AppelClasse />} />
+        <Route path="emploi" element={<MonEmploi />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/login" replace />} />

@@ -228,3 +228,6 @@ class Affectation(models.Model):
 
     def __str__(self):
         return f"{self.enseignant} — {self.matiere} en {self.classe}"
+
+
+from .emploi_models import CreneauEmploi  # noqa: E402,F401
