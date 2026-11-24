@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  User, Lock, Eye, EyeOff, GraduationCap, ArrowRight,
+  User, Lock, Eye, EyeOff, ArrowRight,
   BookOpen, Wallet, Users, ShieldCheck,
 } from 'lucide-react';
 import CONFIG from '../../config/config.js';
@@ -300,7 +300,7 @@ const Login = () => {
         <div className={styles.shade} />
 
         <div className={styles.brand}>
-          <div className={styles.logoMark}><GraduationCap size={20} color="#fff" /></div>
+          <div className={styles.logoMark}><img src="/images/logo-ecolia-icone.png" alt="" /></div>
           <span>Ecolia</span>
         </div>
 
@@ -402,7 +402,7 @@ const Login = () => {
           <p className={styles.help}>
             Mot de passe oublié ? Contactez la direction de votre établissement.
           </p>
-          <p className={styles.legal}>© Sylium Intelligence Système</p>
+          <p className={styles.legal}>Ecolia · par  Sylium Intelligence Système &amp; PROD-INFO</p>
         </div>
       </main>
     </div>

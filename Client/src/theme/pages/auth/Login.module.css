@@ -54,11 +54,13 @@
 
 .logoMark {
   width: 34px; height: 34px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(135deg, var(--sylium-bleu), var(--sylium-marine));
+  border-radius: 9px;
+  overflow: hidden;
+  flex-shrink: 0;
   box-shadow: 0 0 0 2px rgba(229, 161, 0, 0.7);
 }
+
+.logoMark img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
 .heroInner {
   position: absolute;
