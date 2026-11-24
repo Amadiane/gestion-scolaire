@@ -301,7 +301,7 @@ const Login = () => {
 
         <div className={styles.brand}>
           <div className={styles.logoMark}><GraduationCap size={20} color="#fff" /></div>
-          <span>Sylium</span>
+          <span>Ecolia</span>
         </div>
 
         <div className={styles.heroInner}>
