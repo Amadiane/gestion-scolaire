@@ -71,11 +71,37 @@ class ClasseSerializer(MemeEcoleMixin, serializers.ModelSerializer):
     def validate_nom(self, valeur):
         return valeur.strip()
 
+    def _garde_fous_modification(self, attrs):
+        inst = self.instance
+        a_des_notes = Note.objects.filter(classe=inst).exists() or Bulletin.objects.filter(classe=inst).exists()
+        a_des_inscrits = Inscription.objects.filter(classe=inst).exists()
+
+        niveau = attrs.get("niveau")
+        if niveau and niveau.pk != inst.niveau_id and a_des_notes:
+            raise serializers.ValidationError({
+                "niveau": "Le niveau ne peut plus changer : des notes ou bulletins existent déjà "
+                          "et le barème (sur 10 ou sur 20) dépend du niveau."
+            })
+        annee = attrs.get("annee_scolaire")
+        if annee and annee.pk != inst.annee_scolaire_id and (a_des_notes or a_des_inscrits):
+            raise serializers.ValidationError({
+                "annee_scolaire": "L'année ne peut plus changer : la classe contient déjà des élèves ou des notes."
+            })
+        eff_max = attrs.get("effectif_max")
+        if eff_max is not None:
+            effectif = inst.inscriptions.filter(annee_scolaire=inst.annee_scolaire).count()
+            if eff_max < effectif:
+                raise serializers.ValidationError({
+                    "effectif_max": f"L'effectif maximum ne peut pas être inférieur au nombre d'élèves inscrits ({effectif})."
+                })
+
     def validate(self, attrs):
         attrs = super().validate(attrs)  # références de la même école
         ecole = self.context["request"].user.ecole
         nom = attrs.get("nom", getattr(self.instance, "nom", None))
         annee = attrs.get("annee_scolaire", getattr(self.instance, "annee_scolaire", None))
+        if self.instance:
+            self._garde_fous_modification(attrs)
         if ecole and nom and annee:
             doublon = Classe.objects.filter(ecole=ecole, annee_scolaire=annee, nom__iexact=nom)
             if self.instance:
@@ -92,11 +118,12 @@ class ClasseAvecEffectifSerializer(serializers.ModelSerializer):
     niveau_nom = serializers.CharField(source="niveau.nom", read_only=True)
     niveau_ordre = serializers.IntegerField(source="niveau.ordre", read_only=True)
     bareme_note = serializers.IntegerField(source="niveau.bareme_note", read_only=True)
+    matieres = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
 
     class Meta:
         model = Classe
         fields = [
-            "id", "nom", "niveau_nom", "niveau_ordre", "bareme_note",
+            "id", "nom", "niveau", "matieres", "niveau_nom", "niveau_ordre", "bareme_note",
             "annee_scolaire", "effectif_max", "effectif",
         ]
 
@@ -184,5 +211,3 @@ class AffectationSerializer(MemeEcoleMixin, serializers.ModelSerializer):
         if doublon.exists():
             raise serializers.ValidationError("Cette affectation existe déjà.")
         return attrs
-
-

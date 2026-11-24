@@ -1,14 +1,9 @@
 // src/components/Sidebar/Sidebar.jsx
 import { NavLink } from 'react-router-dom';
-// import {
-//   LayoutDashboard, Users, School, BookOpen, FileText, UserCog,
-//   Calendar, CalendarDays, Wallet, ShieldCheck, ClipboardList, Briefcase, CreditCard,
-//   Building2, ClipboardCheck, UserCheck, KeyRound, LogOut, X, MessageCircle, BellRing,
-// } from 'lucide-react';
 import {
   LayoutDashboard, Users, School, BookOpen, FileText, UserCog,
   Calendar, CalendarDays, CalendarClock, Wallet, ShieldCheck, ClipboardList, Briefcase, CreditCard,
-  Building2, ClipboardCheck, UserCheck, KeyRound, LogOut, X, MessageCircle, BellRing,
+  Building2, ClipboardCheck, UserCheck, KeyRound, LogOut, X, MessageCircle, BellRing, BookMarked,
 } from 'lucide-react';
 import styles from '../../theme/components/Sidebar.module.css';
 
@@ -82,10 +77,9 @@ const Sidebar = ({ isOpen, onClose }) => {
 
       <aside className={`${styles.sidebar} ${isOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.header}>
-          {/* <div className={styles.logo}>SI</div> */}
-            <div className={styles.logo}><img src="/logo-sylium-192.png" alt="Sylium" /></div>
+          <div className={styles.logo}><img src="/logo-ecolia-192.png" alt="Ecolia" /></div>
           <div>
-            <div className={styles.brand}>Sylium</div>
+            <div className={styles.brand}>Ecolia</div>
             <div className={styles.brandSub}>Gestion Scolaire</div>
           </div>
           <button className={styles.closeButton} onClick={onClose} aria-label="Fermer le menu">
@@ -123,6 +117,9 @@ const Sidebar = ({ isOpen, onClose }) => {
               <div className={styles.userRole}>{user.role}</div>
             </div>
           </div>
+          <NavLink to="/dashboardAdmin/guide" onClick={onClose} className={styles.passwordLink}>
+            <BookMarked size={15} /> Guide d'utilisation
+          </NavLink>
           <NavLink to="/changer-mot-de-passe" onClick={onClose} className={styles.passwordLink}>
             <KeyRound size={15} /> Mon mot de passe
           </NavLink>

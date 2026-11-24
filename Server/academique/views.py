@@ -2,7 +2,7 @@ import cloudinary.utils
 from django.db.models import Count, Q
 from rest_framework import viewsets
 from rest_framework.decorators import action, api_view
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
 from eleves.models import Eleve, Inscription
@@ -12,6 +12,7 @@ from tenants.permissions import IsDirecteur, IsStaffUser, IsSubscriptionActive
 
 from decimal import Decimal
 from django.db import transaction
+from django.db.models import ProtectedError
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.exceptions import ValidationError as DRFValidationError
 
@@ -80,15 +81,89 @@ class MatiereViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
         serializer.save(ecole=_ecole_ou_erreur(self.request, "une matière"))
 
 
+ROLES_GESTION_CLASSES = ("directeur", "secretaire")
+
+# Liens qui disparaissent avec la classe (ce n'est que de la planification).
+LIENS_SUPPRIMABLES = {"affectation", "creneauemploi"}
+LIBELLES_LIENS = {
+    "inscription": "inscription(s) d'élèves",
+    "note": "note(s)",
+    "bulletin": "bulletin(s)",
+    "presence": "présence(s)",
+    "affectation": "affectation(s) d'enseignants",
+    "creneauemploi": "créneau(x) d'emploi du temps",
+}
+
+
+def _liens_classe(classe):
+    """Compte tout ce qui est rattaché à la classe : (bloquants, supprimables)."""
+    bloquants, supprimables = {}, {}
+    for rel in classe._meta.related_objects:
+        if rel.many_to_many:
+            continue
+        modele = rel.related_model
+        n = modele._default_manager.filter(**{rel.field.name: classe}).count()
+        if not n:
+            continue
+        nom = modele._meta.model_name
+        libelle = LIBELLES_LIENS.get(nom, str(modele._meta.verbose_name_plural))
+        cible = supprimables if nom in LIENS_SUPPRIMABLES else bloquants
+        cible[libelle] = cible.get(libelle, 0) + n
+    return bloquants, supprimables
+
+
+def _texte_liens(liens):
+    return ", ".join(f"{n} {libelle}" for libelle, n in liens.items())
+
+
 class ClasseViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
-    queryset = Classe.objects.select_related("niveau")
+    queryset = Classe.objects.select_related("niveau").prefetch_related("matieres")
     serializer_class = ClasseSerializer
 
     def queryset_enseignant(self, qs, user):
         return qs.filter(id__in=ids_classes(user))
 
+    def _verifier_role(self):
+        if getattr(self.request.user, "role", None) not in ROLES_GESTION_CLASSES:
+            raise PermissionDenied("Seuls la direction et le secrétariat peuvent gérer les classes.")
+
     def perform_create(self, serializer):
+        self._verifier_role()
         serializer.save(ecole=_ecole_ou_erreur(self.request, "une classe"))
+
+    def perform_update(self, serializer):
+        self._verifier_role()
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        self._verifier_role()
+        bloquants, supprimables = _liens_classe(instance)
+        if bloquants:
+            raise ValidationError(
+                f"Impossible de supprimer « {instance.nom} » : elle contient encore {_texte_liens(bloquants)}. "
+                "Transférez ou retirez d'abord ces éléments."
+            )
+        try:
+            with transaction.atomic():
+                for rel in instance._meta.related_objects:
+                    if not rel.many_to_many and rel.related_model._meta.model_name in LIENS_SUPPRIMABLES:
+                        rel.related_model._default_manager.filter(**{rel.field.name: instance}).delete()
+                instance.delete()
+        except ProtectedError:
+            raise ValidationError(f"Impossible de supprimer « {instance.nom} » : des données y sont encore rattachées.")
+
+    @action(detail=True, methods=["get"])
+    def utilisation(self, request, pk=None):
+        """Ce qui est rattaché à la classe, pour informer avant une suppression."""
+        classe = self.get_object()
+        bloquants, supprimables = _liens_classe(classe)
+        return Response({
+            "peut_supprimer": not bloquants,
+            "bloquants": bloquants,
+            "supprimables": supprimables,
+            "message_bloquants": _texte_liens(bloquants),
+            "message_supprimables": _texte_liens(supprimables),
+        })
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())

@@ -1,13 +1,9 @@
 import { NavLink } from 'react-router-dom';
-// import { LayoutDashboard, BookOpen, School, ClipboardCheck, KeyRound, LogOut, X } from 'lucide-react';
 import {
-  LayoutDashboard, Users, School, BookOpen, FileText, UserCog,
-  Calendar, CalendarDays, CalendarClock, Wallet, ShieldCheck, ClipboardList, Briefcase, CreditCard,
-  Building2, ClipboardCheck, UserCheck, KeyRound, LogOut, X, MessageCircle, BellRing,
+  LayoutDashboard, School, BookOpen, ClipboardCheck, CalendarClock,
+  KeyRound, LogOut, X, BookMarked,
 } from 'lucide-react';
-// import styles from '../../theme/components/SidebarEnseignant.module.css';
 import styles from '../../theme/components/Sidebar.module.css';
-
 
 const SECTIONS = [
   {
@@ -43,10 +39,9 @@ const SidebarEnseignant = ({ isOpen, onClose }) => {
 
       <aside className={`${styles.sidebar} ${isOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.header}>
-          {/* <div className={styles.logo}>SI</div> */}
-            <div className={styles.logo}><img src="/logo-sylium-192.png" alt="Sylium" /></div>
+          <div className={styles.logo}><img src="/logo-ecolia-192.png" alt="Ecolia" /></div>
           <div>
-            <div className={styles.brand}>Sylium</div>
+            <div className={styles.brand}>Ecolia</div>
             <div className={styles.brandSub}>Espace Enseignant</div>
           </div>
           <button className={styles.closeButton} onClick={onClose} aria-label="Fermer le menu">
@@ -84,6 +79,9 @@ const SidebarEnseignant = ({ isOpen, onClose }) => {
               <div className={styles.userRole}>Enseignant</div>
             </div>
           </div>
+          <NavLink to="/enseignant/guide" onClick={onClose} className={styles.passwordLink}>
+            <BookMarked size={15} /> Guide d'utilisation
+          </NavLink>
           <NavLink to="/changer-mot-de-passe" onClick={onClose} className={styles.passwordLink}>
             <KeyRound size={15} /> Mon mot de passe
           </NavLink>

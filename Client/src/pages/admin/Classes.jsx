@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { School, Users, Search, Plus, X } from 'lucide-react';
+import { School, Users, Search, Plus, X, Pencil, Trash2 } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
 import BoutonRetour from '../../components/BoutonRetour/BoutonRetour.jsx';
@@ -23,7 +23,11 @@ const messageErreur = (err) => {
   return err.response ? `Erreur serveur (code ${err.response.status}).` : 'Connexion internet requise.';
 };
 
-const formulaireVide = () => ({ nom: '', niveau: '', annee: '', effectif_max: 50, sections: 1 });
+const formulaireVide = () => ({ nom: '', niveau: '', annee: '', effectif_max: 50, sections: 1, matieres: [] });
+
+const racine = CONFIG.API_CLASSES.replace(/\/?$/, '/');
+const urlClasse = (id) => `${racine}${id}/`;
+const API_MATIERES = CONFIG.API_MATIERES || racine.replace('classes', 'matieres');
 
 const Classes = () => {
   const navigate = useNavigate();
@@ -37,6 +41,9 @@ const Classes = () => {
   const [niveauFiltre, setNiveauFiltre] = useState('');
 
   const [modal, setModal] = useState(false);
+  const [edition, setEdition] = useState(null); // classe en cours de modification
+  const [matieresListe, setMatieresListe] = useState([]);
+  const [suppression, setSuppression] = useState(null); // { classe, usage, chargement, erreur, enCours }
   const [form, setForm] = useState(formulaireVide());
   const [niveauxListe, setNiveauxListe] = useState([]);
   const [anneesListe, setAnneesListe] = useState([]);
@@ -59,20 +66,37 @@ const Classes = () => {
 
   useEffect(() => { charger(); }, [charger]);
 
-  const ouvrirFormulaire = async () => {
+  const ouvrirFormulaire = async (classeAModifier = null) => {
     setFormError('');
     setBilan('');
+    setEdition(classeAModifier);
     setForm(formulaireVide());
     setModal(true);
     setPreparation(true);
     try {
-      const [n, a] = await Promise.all([api.get(CONFIG.API_NIVEAUX), api.get(CONFIG.API_ANNEES_SCOLAIRES)]);
+      const [n, a, m] = await Promise.all([
+        api.get(CONFIG.API_NIVEAUX),
+        api.get(CONFIG.API_ANNEES_SCOLAIRES),
+        api.get(API_MATIERES).catch(() => ({ data: [] })),
+      ]);
       const niveaux = [...n.data].sort((x, y) => (x.ordre ?? 0) - (y.ordre ?? 0));
       const annees = a.data;
       const active = annees.find((x) => x.est_active) || annees[0];
       setNiveauxListe(niveaux);
       setAnneesListe(annees);
-      setForm((f) => ({ ...f, niveau: niveaux[0]?.id || '', annee: active?.id || '' }));
+      setMatieresListe(m.data);
+      if (classeAModifier) {
+        setForm({
+          nom: classeAModifier.nom,
+          niveau: classeAModifier.niveau,
+          annee: classeAModifier.annee_scolaire,
+          effectif_max: classeAModifier.effectif_max || 50,
+          sections: 1,
+          matieres: classeAModifier.matieres || [],
+        });
+      } else {
+        setForm((f) => ({ ...f, niveau: niveaux[0]?.id || '', annee: active?.id || '' }));
+      }
     } catch (err) {
       setFormError(`Impossible de charger les niveaux et années : ${messageErreur(err)}`);
     } finally {
@@ -81,6 +105,54 @@ const Classes = () => {
   };
 
   const maj = (champ, valeur) => setForm((f) => ({ ...f, [champ]: valeur }));
+
+  const basculerMatiere = (id) =>
+    setForm((f) => ({
+      ...f,
+      matieres: f.matieres.includes(id) ? f.matieres.filter((x) => x !== id) : [...f.matieres, id],
+    }));
+
+  const modifier = async (e) => {
+    e.preventDefault();
+    setFormError('');
+    setSaving(true);
+    try {
+      await api.patch(urlClasse(edition.id), {
+        nom: form.nom.trim(),
+        niveau: Number(form.niveau),
+        effectif_max: Number(form.effectif_max) || 50,
+        matieres: form.matieres,
+      });
+      await charger();
+      setModal(false);
+      setEdition(null);
+    } catch (err) {
+      setFormError(messageErreur(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const demanderSuppression = async (classe) => {
+    setSuppression({ classe, usage: null, chargement: true, erreur: '', enCours: false });
+    try {
+      const res = await api.get(`${urlClasse(classe.id)}utilisation/`);
+      setSuppression((s) => s && { ...s, usage: res.data, chargement: false });
+    } catch (err) {
+      setSuppression((s) => s && { ...s, chargement: false, erreur: messageErreur(err) });
+    }
+  };
+
+  const confirmerSuppression = async () => {
+    setSuppression((s) => ({ ...s, enCours: true, erreur: '' }));
+    try {
+      await api.delete(urlClasse(suppression.classe.id));
+      setSuppression(null);
+      await charger();
+    } catch (err) {
+      setSuppression((s) => ({ ...s, enCours: false, erreur: messageErreur(err) }));
+    }
+  };
 
   const nomsAcreer = () => {
     const base = form.nom.trim();
@@ -143,7 +215,7 @@ const Classes = () => {
 
   const totalEleves = filtrees.reduce((s, c) => s + (c.effectif || 0), 0);
 
-  const apercu = nomsAcreer();
+  const apercu = edition ? [form.nom.trim()].filter(Boolean) : nomsAcreer();
 
   return (
     <div className={styles.wrapper}>
@@ -158,7 +230,7 @@ const Classes = () => {
           </p>
         </div>
         {peutCreer && (
-          <button type="button" className={styles.addButton} onClick={ouvrirFormulaire}>
+          <button type="button" className={styles.addButton} onClick={() => ouvrirFormulaire()}>
             <Plus size={16} /> Nouvelle classe
           </button>
         )}
@@ -195,7 +267,7 @@ const Classes = () => {
           <School size={40} color="var(--color-text-dim)" />
           <p>Aucune classe créée pour le moment.</p>
           {peutCreer ? (
-            <button type="button" className={styles.addButton} onClick={ouvrirFormulaire}>
+            <button type="button" className={styles.addButton} onClick={() => ouvrirFormulaire()}>
               <Plus size={16} /> Créer la première classe
             </button>
           ) : (
@@ -241,6 +313,18 @@ const Classes = () => {
                     <Users size={14} />
                     {classe.effectif}{classe.effectif_max ? `/${classe.effectif_max}` : ''}
                   </div>
+                  {peutCreer && (
+                    <div className={styles.cardActions} onClick={(e) => e.stopPropagation()}>
+                      <button type="button" className={styles.iconBtn} title="Modifier" aria-label={`Modifier ${classe.nom}`}
+                        onClick={() => ouvrirFormulaire(classe)}>
+                        <Pencil size={15} />
+                      </button>
+                      <button type="button" className={`${styles.iconBtn} ${styles.iconBtnDanger}`} title="Supprimer"
+                        aria-label={`Supprimer ${classe.nom}`} onClick={() => demanderSuppression(classe)}>
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -252,7 +336,7 @@ const Classes = () => {
         <div className={formStyles.overlay} onClick={() => !saving && setModal(false)}>
           <div className={formStyles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={formStyles.header}>
-              <h2>Nouvelle classe</h2>
+              <h2>{edition ? `Modifier ${edition.nom}` : 'Nouvelle classe'}</h2>
               <button className={formStyles.closeButton} onClick={() => setModal(false)} aria-label="Fermer">
                 <X size={20} />
               </button>
@@ -270,9 +354,9 @@ const Classes = () => {
                   : "Aucune année scolaire n'est définie. Créez-en une dans « Années scolaires »."}
               </p>
             ) : (
-              <form onSubmit={creer} className={formStyles.form}>
+              <form onSubmit={edition ? modifier : creer} className={formStyles.form}>
                 <div className={formStyles.field}>
-                  <label htmlFor="classe-nom">{form.sections > 1 ? 'Nom de base *' : 'Nom de la classe *'}</label>
+                  <label htmlFor="classe-nom">{!edition && form.sections > 1 ? 'Nom de base *' : 'Nom de la classe *'}</label>
                   <input
                     id="classe-nom"
                     value={form.nom}
@@ -293,7 +377,7 @@ const Classes = () => {
                   </div>
                   <div className={formStyles.field}>
                     <label htmlFor="classe-annee">Année scolaire *</label>
-                    <select id="classe-annee" value={form.annee} onChange={(e) => maj('annee', e.target.value)} required>
+                    <select id="classe-annee" value={form.annee} onChange={(e) => maj('annee', e.target.value)} required disabled={!!edition}>
                       {anneesListe.map((a) => (
                         <option key={a.id} value={a.id}>{a.nom}{a.est_active ? ' (en cours)' : ''}</option>
                       ))}
@@ -313,6 +397,7 @@ const Classes = () => {
                       onChange={(e) => maj('effectif_max', e.target.value)}
                     />
                   </div>
+                  {!edition && (
                   <div className={formStyles.field}>
                     <label htmlFor="classe-sections">Nombre de sections</label>
                     <select
@@ -326,9 +411,24 @@ const Classes = () => {
                       ))}
                     </select>
                   </div>
+                  )}
                 </div>
 
-                {apercu.length > 0 && (
+                {matieresListe.length > 0 && (
+                  <div className={formStyles.field}>
+                    <label>Matières enseignées dans cette classe</label>
+                    <div className={styles.matieresGrid}>
+                      {matieresListe.map((m) => (
+                        <label key={m.id} className={styles.matiereCheck}>
+                          <input type="checkbox" checked={form.matieres.includes(m.id)} onChange={() => basculerMatiere(m.id)} />
+                          {m.nom}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {!edition && apercu.length > 0 && (
                   <p className={styles.apercu}>
                     {apercu.length > 1 ? 'Seront créées : ' : 'Sera créée : '}
                     <strong>{apercu.join(', ')}</strong>
@@ -340,11 +440,54 @@ const Classes = () => {
                     Annuler
                   </button>
                   <button type="submit" className={formStyles.submitButton} disabled={saving || apercu.length === 0}>
-                    {saving ? 'Création...' : apercu.length > 1 ? `Créer ${apercu.length} classes` : 'Créer la classe'}
+                    {edition ? (saving ? 'Enregistrement...' : 'Enregistrer') : saving ? 'Création...' : apercu.length > 1 ? `Créer ${apercu.length} classes` : 'Créer la classe'}
                   </button>
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {suppression && (
+        <div className={formStyles.overlay} onClick={() => !suppression.enCours && setSuppression(null)}>
+          <div className={formStyles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={formStyles.header}>
+              <h2>Supprimer {suppression.classe.nom} ?</h2>
+              <button className={formStyles.closeButton} onClick={() => setSuppression(null)} aria-label="Fermer">
+                <X size={20} />
+              </button>
+            </div>
+
+            {suppression.chargement && <p className={styles.stateMsg}>Vérification...</p>}
+            {suppression.erreur && <div className={formStyles.errorBox}>{suppression.erreur}</div>}
+
+            {suppression.usage && !suppression.usage.peut_supprimer && (
+              <div className={formStyles.errorBox}>
+                Suppression impossible : cette classe contient encore {suppression.usage.message_bloquants}.
+                Pour la supprimer, transférez ou retirez d'abord ces éléments.
+              </div>
+            )}
+            {suppression.usage && suppression.usage.peut_supprimer && (
+              <p className={styles.confirmTexte}>
+                Cette classe est vide.
+                {suppression.usage.message_supprimables &&
+                  ` Seront aussi supprimés : ${suppression.usage.message_supprimables}.`}{' '}
+                Cette action est définitive.
+              </p>
+            )}
+
+            <div className={formStyles.actions}>
+              <button type="button" className={formStyles.cancelButton} onClick={() => setSuppression(null)}>
+                {suppression.usage?.peut_supprimer ? 'Annuler' : 'Fermer'}
+              </button>
+              {suppression.usage?.peut_supprimer && (
+                <button type="button" className={`${formStyles.submitButton} ${styles.boutonDanger}`}
+                  disabled={suppression.enCours} onClick={confirmerSuppression}>
+                  {suppression.enCours ? 'Suppression...' : 'Supprimer définitivement'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
