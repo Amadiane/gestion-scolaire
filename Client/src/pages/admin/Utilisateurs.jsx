@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, UserCog, Search, KeyRound, ChevronUp, ChevronDown, X } from 'lucide-react';
+import { Plus, UserCog, Search, KeyRound, ChevronUp, ChevronDown, X, LockOpen, Lock } from 'lucide-react';
 import api from '../../services/api.js';
 import CONFIG from '../../config/config.js';
 import BoutonRetour from '../../components/BoutonRetour/BoutonRetour.jsx';
@@ -30,6 +30,12 @@ const rangRole = (r) => {
 const norm = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const comparer = (a, b) =>
   String(a || '').localeCompare(String(b || ''), 'fr', { numeric: true, sensitivity: 'base' });
+const estBloque = (u) =>
+  Boolean(u.bloque_definitivement || (u.bloque_jusqua && new Date(u.bloque_jusqua) > new Date()));
+const libelleBlocage = (u) =>
+  u.bloque_definitivement
+    ? 'Bloqué (tentatives)'
+    : `Bloqué jusqu'à ${new Date(u.bloque_jusqua).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
 const nomComplet = (u) => `${u.last_name || ''} ${u.first_name || ''}`.trim();
 
 const comparateurs = {
@@ -52,6 +58,9 @@ const Utilisateurs = () => {
   const [aReinitialiser, setAReinitialiser] = useState(null);
   const [reinitEnCours, setReinitEnCours] = useState(false);
   const [identifiants, setIdentifiants] = useState(null);
+
+  const [aDebloquer, setADebloquer] = useState(null);
+  const [debloquageEnCours, setDebloquageEnCours] = useState(false);
 
   const charger = async () => {
     setLoading(true);
@@ -110,6 +119,21 @@ const Utilisateurs = () => {
       alert("Impossible de réinitialiser le mot de passe.");
     } finally {
       setReinitEnCours(false);
+    }
+  };
+
+  const confirmerDeblocage = async () => {
+    if (!aDebloquer) return;
+    setDebloquageEnCours(true);
+    try {
+      await api.post(`${CONFIG.API_UTILISATEUR_DETAIL(aDebloquer.id)}debloquer/`);
+      setADebloquer(null);
+      charger();
+    } catch (err) {
+      setADebloquer(null);
+      alert(err.response?.data?.detail || "Impossible de débloquer ce compte.");
+    } finally {
+      setDebloquageEnCours(false);
     }
   };
 
@@ -254,6 +278,11 @@ const Utilisateurs = () => {
                       >
                         {u.is_active ? 'Actif' : 'Désactivé'}
                       </button>
+                      {estBloque(u) && (
+                        <div style={{ fontSize: '0.72rem', color: 'var(--color-danger, #c0392b)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <Lock size={11} /> {libelleBlocage(u)}
+                        </div>
+                      )}
                       {u.doit_changer_mdp && (
                         <div style={{ fontSize: '0.7rem', color: 'var(--color-text-dim)', marginTop: 4 }}>
                           Mot de passe à changer
@@ -264,6 +293,15 @@ const Utilisateurs = () => {
                       <button className={styles.resetPwdButton} onClick={() => setAReinitialiser(u)}>
                         <KeyRound size={13} /> Réinitialiser
                       </button>
+                      {estBloque(u) && (u.role === 'directeur' ? (
+                        <div style={{ fontSize: '0.72rem', color: 'var(--color-text-dim)', marginTop: 6 }}>
+                          À débloquer par Sylium
+                        </div>
+                      ) : (
+                        <button className={styles.resetPwdButton} style={{ marginTop: 6 }} onClick={() => setADebloquer(u)}>
+                          <LockOpen size={13} /> Débloquer
+                        </button>
+                      ))}
                     </td>
                   </tr>
                 ))}
@@ -283,6 +321,17 @@ const Utilisateurs = () => {
           enCours={reinitEnCours}
           onConfirm={confirmerReinitialisation}
           onCancel={() => setAReinitialiser(null)}
+        />
+      )}
+
+      {aDebloquer && (
+        <FenetreConfirmation
+          titre="Débloquer ce compte ?"
+          message={`${nomComplet(aDebloquer) || aDebloquer.username} pourra de nouveau se connecter avec son mot de passe actuel. S'il l'a oublié, utilisez ensuite « Réinitialiser ».`}
+          confirmer="Débloquer"
+          enCours={debloquageEnCours}
+          onConfirm={confirmerDeblocage}
+          onCancel={() => setADebloquer(null)}
         />
       )}
 

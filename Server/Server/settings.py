@@ -99,10 +99,40 @@ REST_FRAMEWORK = {
         "tenants.permissions.IsStaffUser",
         "tenants.permissions.EnseignantLectureSeule",
     ),
-    "DEFAULT_THROTTLE_RATES": {"login": "20/min"},
+    # Limites globales (anti-abus) + limite dédiée à la connexion.
+    "DEFAULT_THROTTLE_CLASSES": (
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ),
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "60/min",
+        "user": "600/min",
+        "login": config("LOGIN_THROTTLE", default="10/min"),
+    },
 }
+
+# Nombre de proxys devant l'application (Render). Sans cette valeur, DRF se fie à l'en-tête
+# X-Forwarded-For entier, que le client peut falsifier pour contourner les limites de débit.
+# À renseigner dans Render (NUM_PROXIES) après vérification : voir la note de revue de sécurité.
+_NUM_PROXIES = config("NUM_PROXIES", default="")
+if _NUM_PROXIES:
+    REST_FRAMEWORK["NUM_PROXIES"] = int(_NUM_PROXIES)
+
 if not DEBUG:
     REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"] = ["rest_framework.renderers.JSONRenderer"]
+
+    # ---- Durcissement HTTPS (production uniquement) ----
+    # Render termine le HTTPS en amont : Django doit lire l'en-tête du proxy.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", default=True, cast=bool)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    # HSTS : on démarre court (1 jour). Augmentez ensuite (ex. 31536000) une fois tout vérifié :
+    # un HSTS long est difficile à annuler.
+    SECURE_HSTS_SECONDS = config("SECURE_HSTS_SECONDS", default=86400, cast=int)
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = "same-origin"
+    X_FRAME_OPTIONS = "DENY"
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STORAGES = {
@@ -183,6 +213,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {'min_length': 8},
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',

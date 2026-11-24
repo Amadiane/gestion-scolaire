@@ -5,7 +5,7 @@ from django.contrib.auth.views import LoginView
 from django.shortcuts import render
 from rest_framework import viewsets
 from rest_framework.decorators import action, api_view, permission_classes
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
 from tenants.mixins import TenantScopedQuerysetMixin
@@ -98,3 +98,16 @@ class UtilisateurViewSet(TenantScopedQuerysetMixin, viewsets.ModelViewSet):
         utilisateur.doit_changer_mdp = True
         utilisateur.save(update_fields=["password", "doit_changer_mdp"])
         return Response({"username": utilisateur.username, "nouveau_mot_de_passe": nouveau})
+
+    @action(detail=True, methods=["post"])
+    def debloquer(self, request, pk=None):
+        """
+        Lève le blocage causé par les échecs de connexion.
+        - Le directeur débloque le personnel de SON école (get_object garantit l'école).
+        - Un directeur ne peut être débloqué que par Sylium (superutilisateur).
+        """
+        cible = self.get_object()
+        if cible.role == Utilisateur.Role.DIRECTEUR and not request.user.is_superuser:
+            raise PermissionDenied("Seul Sylium peut débloquer un directeur.")
+        cible.debloquer(auteur=request.user)
+        return Response(UtilisateurSerializer(cible).data)

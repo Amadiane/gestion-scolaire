@@ -238,6 +238,11 @@ const Login = () => {
         setError('Trop de tentatives de connexion. Patientez quelques minutes.');
         return;
       }
+      // Compte bloqué après trop d'échecs : le serveur fournit le message à afficher.
+      if (tokenRes.status === 403 && tokenData.erreur === 'compte_bloque') {
+        setError(tokenData.message || 'Compte bloqué. Contactez votre directeur.');
+        return;
+      }
       if (tokenRes.status === 403 && tokenData.raison) {
         setError(MESSAGES_ACCES[tokenData.raison] || 'Accès actuellement indisponible.');
         return;
