@@ -25,6 +25,8 @@ const Notes = () => {
   const [matieres, setMatieres] = useState([]);
   const [anneeActive, setAnneeActive] = useState(null);
   const [chargementErreur, setChargementErreur] = useState('');
+  // Faux tant que classes, matières et années n'ont pas répondu : évite d'afficher des erreurs à tort.
+  const [baseChargee, setBaseChargee] = useState(false);
 
   const [classeId, setClasseId] = useState('');
   const [matiereId, setMatiereId] = useState('');
@@ -77,6 +79,8 @@ const Notes = () => {
           "Impossible de charger les classes/matières/années scolaires. " +
           (err.response?.data?.detail || err.message)
         );
+      } finally {
+        setBaseChargee(true);
       }
     };
     chargerBase();
@@ -317,11 +321,13 @@ const Notes = () => {
         )}
       </div>
 
-      {matieres.length === 0 && !chargementErreur && (
+      {!baseChargee && <p className={styles.stateMsg}>Chargement...</p>}
+
+      {baseChargee && matieres.length === 0 && !chargementErreur && (
         <p className={styles.errorMsg}>Aucune matière disponible pour votre école.</p>
       )}
 
-      {!anneeActive && (
+      {baseChargee && !chargementErreur && !anneeActive && (
         <p className={styles.errorMsg}>Aucune année scolaire active — impossible de saisir des notes.</p>
       )}
 
@@ -393,8 +399,8 @@ const Notes = () => {
 
       <div className={styles.historiqueSection}>
         <h2 className={styles.historiqueTitle}>
-          <History size={16} /> Historique des notes ({notesFiltrees.length}
-          {notesFiltrees.length !== toutesLesNotes.length ? ` sur ${toutesLesNotes.length}` : ''})
+          <History size={16} /> Historique des notes
+          {!loadingHistorique && ` (${notesFiltrees.length}${notesFiltrees.length !== toutesLesNotes.length ? ` sur ${toutesLesNotes.length}` : ''})`}
         </h2>
 
         <div className={listes.barre}>

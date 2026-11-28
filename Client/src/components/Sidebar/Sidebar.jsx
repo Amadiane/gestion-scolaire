@@ -1,4 +1,5 @@
 // src/components/Sidebar/Sidebar.jsx
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Users, School, BookOpen, FileText, UserCog,
@@ -6,6 +7,8 @@ import {
   Building2, ClipboardCheck, UserCheck, KeyRound, LogOut, X, MessageCircle, BellRing, BookMarked,
 } from 'lucide-react';
 import styles from '../../theme/components/Sidebar.module.css';
+import bientot from '../../theme/components/SidebarBientot.module.css';
+import { AFFICHER_MODULES_A_VENIR, MODULES_A_VENIR } from '../../config/modulesAVenir.js';
 
 // `roles` limite l'affichage du lien. Le vrai contrôle d'accès reste côté
 // backend : masquer un lien n'est qu'une question d'ergonomie.
@@ -64,6 +67,7 @@ const LIBELLES_ROLES = {
 
 const Sidebar = ({ isOpen, onClose }) => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const [moduleOuvert, setModuleOuvert] = useState(null);
 
   const handleLogout = () => {
     localStorage.removeItem('access');
@@ -110,6 +114,25 @@ const Sidebar = ({ isOpen, onClose }) => {
               ))}
             </div>
           ))}
+
+          {/* Modules annoncés : visibles de la direction pour la présentation, sans effet. */}
+          {AFFICHER_MODULES_A_VENIR && user.role === 'directeur' && (
+            <div>
+              <div className={styles.sectionTitle}>Bientôt disponible</div>
+              {MODULES_A_VENIR.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  className={`${styles.navItem} ${bientot.item}`}
+                  onClick={() => setModuleOuvert(m)}
+                >
+                  <m.icon size={18} />
+                  <span>{m.label}</span>
+                  <span className={bientot.badge}>Bientôt</span>
+                </button>
+              ))}
+            </div>
+          )}
         </nav>
 
         <div className={styles.footer}>
@@ -133,6 +156,22 @@ const Sidebar = ({ isOpen, onClose }) => {
           </button>
         </div>
       </aside>
+
+      {moduleOuvert && (
+        <div className={bientot.overlay} onClick={() => setModuleOuvert(null)}>
+          <div className={bientot.carte} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className={bientot.entete}>
+              <div className={bientot.icone}><moduleOuvert.icon size={20} /></div>
+              <div>
+                <h3 className={bientot.titre}>{moduleOuvert.label}</h3>
+                <span className={bientot.statut}>{moduleOuvert.statut}</span>
+              </div>
+            </div>
+            <p className={bientot.texte}>{moduleOuvert.description}</p>
+            <button type="button" className={bientot.fermer} onClick={() => setModuleOuvert(null)}>Fermer</button>
+          </div>
+        </div>
+      )}
     </>
   );
 };

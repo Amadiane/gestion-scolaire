@@ -191,3 +191,13 @@
 @media (min-width: 861px) {
   .overlay { display: none; }
 }
+
+.nav {
+  scrollbar-width: thin;                                  /* Firefox */
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+.nav::-webkit-scrollbar { width: 6px; }
+.nav::-webkit-scrollbar-track { background: transparent; }
+.nav::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.22); border-radius: 6px; }
+.nav::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.38); }
+.nav::-webkit-scrollbar-button { display: none; }        /* supprime les flèches */
