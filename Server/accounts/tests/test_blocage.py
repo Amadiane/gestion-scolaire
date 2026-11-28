@@ -141,3 +141,4 @@ class BlocageConnexionTests(APITestCase):
         self.client.force_authenticate(self.employe)
         r = self.client.post(f"{GESTION_URL}{self.directeur2.id}/debloquer/")
         self.assertEqual(r.status_code, 403)
+        

@@ -1,6 +1,10 @@
 from rest_framework import permissions
 
 ROLES_EXTERNES = ("parent", "eleve")
+# Rôles sans accès à l'API du personnel : les parents et élèves (espace à part) et le
+# fondateur, qui n'a qu'un tableau de bord en lecture seule. Refuser par défaut est plus sûr
+# que de lister, vue par vue, tout ce qu'il n'a pas le droit de modifier.
+ROLES_HORS_API_PERSONNEL = ROLES_EXTERNES + ("fondateur",)
 
 
 class IsSubscriptionActive(permissions.BasePermission):
@@ -18,14 +22,14 @@ class IsSubscriptionActive(permissions.BasePermission):
 
 
 class IsStaffUser(permissions.BasePermission):
-    """Les parents et élèves n'ont pas accès à l'API du personnel."""
+    """Les parents, les élèves et le fondateur n'ont pas accès à l'API du personnel."""
     message = "Cet espace est réservé au personnel de l'établissement."
 
     def has_permission(self, request, view):
         user = request.user
         if not user or not user.is_authenticated:
             return False
-        return user.is_superuser or getattr(user, "role", "") not in ROLES_EXTERNES
+        return user.is_superuser or getattr(user, "role", "") not in ROLES_HORS_API_PERSONNEL
 
 
 class EnseignantLectureSeule(permissions.BasePermission):
@@ -49,3 +53,14 @@ class IsDirecteur(permissions.BasePermission):
             user and user.is_authenticated
             and (user.is_superuser or getattr(user, "role", None) == "directeur")
         )
+
+
+class IsFondateurOuDirecteur(permissions.BasePermission):
+    """Tableau de bord du fondateur : lecture seule, réservé au fondateur et au directeur."""
+    message = "Ce tableau de bord est réservé au fondateur et à la direction."
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated or user.is_superuser:
+            return False
+        return getattr(user, "role", None) in ("fondateur", "directeur") and request.method in permissions.SAFE_METHODS

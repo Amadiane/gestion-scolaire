@@ -32,9 +32,9 @@ const SECTIONS = [
   {
     titre: 'Présences',
     liens: [
-      { to: '/dashboardAdmin/presences', label: 'Faire l\'appel', icon: ClipboardCheck, roles: ['directeur', 'secretaire', 'surveillant'] },
-      { to: '/dashboardAdmin/presences-suivi', label: 'Suivi des présences', icon: CalendarDays, roles: ['directeur', 'secretaire', 'surveillant'] },
-      { to: '/dashboardAdmin/alertes-parents', label: 'Alertes parents', icon: MessageCircle, roles: ['directeur', 'secretaire', 'surveillant'] },
+      { to: '/dashboardAdmin/presences', label: 'Faire l\'appel', icon: ClipboardCheck, roles: ['directeur', 'secretaire', 'surveillant', 'censeur'] },
+      { to: '/dashboardAdmin/presences-suivi', label: 'Suivi des présences', icon: CalendarDays, roles: ['directeur', 'secretaire', 'surveillant', 'censeur'] },
+      { to: '/dashboardAdmin/alertes-parents', label: 'Alertes parents', icon: MessageCircle, roles: ['directeur', 'secretaire', 'surveillant', 'censeur'] },
       { to: '/dashboardAdmin/presences-personnel', label: 'Présences personnel', icon: UserCheck, roles: ['directeur'] },
     ],
   },
@@ -56,6 +56,11 @@ const SECTIONS = [
     ],
   },
 ];
+
+const LIBELLES_ROLES = {
+  directeur: 'Directeur', secretaire: 'Secrétaire', comptable: 'Comptable',
+  surveillant: 'Surveillant général', censeur: 'Proviseur / Censeur',
+};
 
 const Sidebar = ({ isOpen, onClose }) => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -114,7 +119,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             </div>
             <div>
               <div className={styles.userName}>{user.first_name || user.username}</div>
-              <div className={styles.userRole}>{user.role}</div>
+              <div className={styles.userRole}>{LIBELLES_ROLES[user.role] || user.role}</div>
             </div>
           </div>
           <NavLink to="/dashboardAdmin/guide" onClick={onClose} className={styles.passwordLink}>

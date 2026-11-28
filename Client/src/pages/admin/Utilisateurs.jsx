@@ -13,6 +13,8 @@ import listes from '../../theme/pages/admin/Listes.module.css';
 
 const ROLE_LABEL = {
   directeur: 'Directeur',
+  censeur: 'Proviseur / Censeur',
+  fondateur: 'Fondateur',
   surveillant: 'Surveillant général',
   comptable: 'Comptable',
   secretaire: 'Secrétaire',
@@ -21,7 +23,7 @@ const ROLE_LABEL = {
   eleve: 'Élève',
 };
 
-const ORDRE_ROLES = ['directeur', 'comptable', 'secretaire', 'surveillant', 'enseignant', 'parent', 'eleve'];
+const ORDRE_ROLES = ['directeur', 'fondateur', 'censeur', 'comptable', 'secretaire', 'surveillant', 'enseignant', 'parent', 'eleve'];
 const rangRole = (r) => {
   const i = ORDRE_ROLES.indexOf(r);
   return i === -1 ? 99 : i;

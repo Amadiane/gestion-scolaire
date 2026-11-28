@@ -34,9 +34,10 @@ import EmploisDuTemps from './pages/admin/EmploisDuTemps.jsx';
 import MonEmploi from './pages/enseignant/MonEmploi.jsx';
 import Guide from './pages/admin/Guide.jsx';
 import Sylium from './pages/sylium/Sylium.jsx';
+import DashboardFondateur from './pages/fondateur/DashboardFondateur.jsx';
 
-const ROLES_ADMIN = ['directeur', 'secretaire', 'comptable', 'surveillant'];
-const ACCUEIL = { enseignant: '/enseignant' };
+const ROLES_ADMIN = ['directeur', 'secretaire', 'comptable', 'surveillant', 'censeur'];
+const ACCUEIL = { enseignant: '/enseignant', fondateur: '/fondateur' };
 ROLES_ADMIN.forEach((r) => { ACCUEIL[r] = '/dashboardAdmin'; });
 
 // Le contrôle réel est fait par l'API ; ceci évite d'afficher des pages vides.
@@ -143,6 +144,15 @@ function App() {
         <Route path="emploi" element={<MonEmploi />} />
         <Route path="guide" element={<Guide />} />
       </Route>
+
+      <Route
+        path="/fondateur"
+        element={
+          <PrivateRoute roles={['fondateur']}>
+            <DashboardFondateur />
+          </PrivateRoute>
+        }
+      />
 
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

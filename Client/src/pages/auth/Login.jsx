@@ -17,6 +17,8 @@ const REDIRECTIONS_PAR_ROLE = {
   comptable: '/dashboardAdmin',
   secretaire: '/dashboardAdmin',
   surveillant: '/dashboardAdmin',
+  censeur: '/dashboardAdmin',
+  fondateur: '/fondateur',
   enseignant: '/enseignant',
   parent: '/parent',
   eleve: '/eleve',

@@ -25,7 +25,9 @@ class Utilisateur(AbstractUser):
         SURVEILLANT = "surveillant", "Surveillant général"
         COMPTABLE = "comptable", "Comptable"
         SECRETAIRE = "secretaire", "Secrétaire"
+        CENSEUR = "censeur", "Proviseur / Censeur"
         ENSEIGNANT = "enseignant", "Enseignant"
+        FONDATEUR = "fondateur", "Fondateur"
         PARENT = "parent", "Parent"
         ELEVE = "eleve", "Élève"
 

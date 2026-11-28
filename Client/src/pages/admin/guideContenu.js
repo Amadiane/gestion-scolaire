@@ -14,6 +14,8 @@ export const ROLES_LIBELLES = {
   secretaire: 'Secrétaire',
   comptable: 'Comptable',
   surveillant: 'Surveillant',
+  censeur: 'Proviseur / Censeur',
+  fondateur: 'Fondateur',
   enseignant: 'Enseignant',
 };
 
@@ -28,8 +30,12 @@ export const SECTIONS = [
       "Saisissez votre identifiant et votre mot de passe.",
       "Changez votre mot de passe à la première connexion avec le bouton « Mon mot de passe », en bas du menu.",
       "En fin de travail sur un ordinateur partagé, cliquez sur « Déconnexion ».",
+      "Après 5 mots de passe erronés, le compte est bloqué 15 minutes. Après 10, il reste bloqué jusqu'à ce qu'on le débloque : votre directeur pour le personnel, Sylium pour un directeur.",
     ],
-    astuces: ["Sur téléphone, ajoutez Ecolia à l'écran d'accueil : elle s'ouvre comme une application."],
+    astuces: [
+      "Sur téléphone, ajoutez Ecolia à l'écran d'accueil : elle s'ouvre comme une application.",
+      "Mot de passe oublié ? Ne multipliez pas les essais : demandez à votre directeur de le réinitialiser.",
+    ],
   },
   {
     id: 'annees',
@@ -112,7 +118,7 @@ export const SECTIONS = [
   {
     id: 'appel',
     titre: "Faire l'appel",
-    roles: ['directeur', 'surveillant', 'enseignant', 'secretaire'],
+    roles: ['directeur', 'surveillant', 'censeur', 'enseignant', 'secretaire'],
     resume: "L'appel enregistre pour chaque élève : présent, absent ou en retard.",
     etapes: [
       "Menu « Faire l'appel ».",
@@ -125,7 +131,7 @@ export const SECTIONS = [
   {
     id: 'alertes',
     titre: 'Alertes aux parents (absences et retards)',
-    roles: ['directeur', 'secretaire', 'surveillant'],
+    roles: ['directeur', 'secretaire', 'surveillant', 'censeur'],
     resume: "Prévenez les parents le jour même, par WhatsApp, en un clic.",
     etapes: [
       "Menu « Alertes parents ». La liste du jour montre les élèves absents ou en retard.",
@@ -199,7 +205,7 @@ export const SECTIONS = [
   {
     id: 'emplois',
     titre: 'Emplois du temps',
-    roles: ['directeur', 'secretaire', 'enseignant'],
+    roles: ['directeur', 'secretaire', 'censeur', 'enseignant'],
     resume: "Chaque école compose ses créneaux librement, classe par classe.",
     etapes: [
       "Direction et secrétariat : menu « Emplois du temps », choisissez la classe, puis ajoutez les créneaux.",
@@ -222,8 +228,15 @@ export const SECTIONS = [
       "Menu « Utilisateurs », puis création d'un compte : nom, identifiant, rôle.",
       "Remettez le mot de passe temporaire à la personne et demandez-lui de le changer.",
       "Le menu « Personnel » regroupe les fiches de l'équipe.",
+      "Mot de passe oublié : bouton « Réinitialiser » sur la ligne de la personne. Un nouveau mot de passe temporaire s'affiche une seule fois : notez-le et remettez-le en main propre.",
+      "Compte « Bloqué » (trop de mots de passe erronés) : bouton « Débloquer » sur la ligne de la personne. Elle peut se reconnecter aussitôt.",
+      "Le bouton « Actif / Désactivé » retire ou rend l'accès d'une personne, par exemple quand elle quitte l'école.",
+      "Le compte d'un directeur bloqué ne peut être débloqué que par Sylium : contactez-nous.",
     ],
-    astuces: ["Donnez le rôle minimal nécessaire : un comptable n'a pas besoin des notes, un enseignant pas des finances."],
+    astuces: [
+      "Donnez le rôle minimal nécessaire : un comptable n'a pas besoin des notes, un enseignant pas des finances.",
+      "Un compte bloqué qui se débloque seul au bout de 15 minutes est normal : c'est le blocage temporaire.",
+    ],
   },
   {
     id: 'ecole',

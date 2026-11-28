@@ -7,10 +7,12 @@ import fc from '../../theme/components/FenetresCompte.module.css';
 
 const ROLES = [
   { value: 'directeur', label: 'Directeur' },
+  { value: 'censeur', label: 'Proviseur / Censeur' },
   { value: 'surveillant', label: 'Surveillant général' },
   { value: 'comptable', label: 'Comptable' },
   { value: 'secretaire', label: 'Secrétaire' },
   { value: 'enseignant', label: 'Enseignant' },
+  { value: 'fondateur', label: 'Fondateur (lecture seule)' },
 ];
 
 // Sans caractères ambigus (0/O, 1/l/I) : le mot de passe est recopié à la main.
